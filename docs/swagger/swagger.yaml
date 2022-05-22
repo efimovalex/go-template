@@ -1,0 +1,49 @@
+definitions:
+  rest.Message:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /:
+    get:
+      consumes:
+      - application/json
+      description: Returns root endpoint
+      parameters:
+      - description: 'Example: Bearer token'
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: request JSON params
+        in: body
+        name: data
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: No content
+          schema:
+            type: string
+        "400":
+          description: Invalid request JSON
+          schema:
+            $ref: '#/definitions/rest.Message'
+        "422":
+          description: Params validation error
+          schema:
+            $ref: '#/definitions/rest.Message'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/rest.Message'
+      summary: '[get] /'
+      tags:
+      - root
+swagger: "2.0"

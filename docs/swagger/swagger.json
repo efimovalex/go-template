@@ -1,0 +1,77 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/": {
+            "get": {
+                "description": "Returns root endpoint",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "root"
+                ],
+                "summary": "[get] /",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Example: Bearer token",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "request JSON params",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "No content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request JSON",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Message"
+                        }
+                    },
+                    "422": {
+                        "description": "Params validation error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Message"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/rest.Message"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "rest.Message": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

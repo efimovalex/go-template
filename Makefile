@@ -45,7 +45,7 @@ run: ## Runs main package
 
 swag:  ## Generate swagger documentation json/yaml
 	@swag --version
-	@swag init -p pascalcase -g ../../cmd/main.go -o docs/swagger -d ./services/,./lib,./pkg --md docs
+	@swag init -p pascalcase -g ../cmd/main.go -o docs/swagger -d ./services/,./internal,./pkg --md docs
 	
 up: ## Starts docker containers for dependent services
 	@docker-compose up -d --build --remove-orphans
