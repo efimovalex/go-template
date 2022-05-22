@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14.1
+    init: true
+    restart: always
+    container_name: replaceme_postgres
+    environment:
+      - POSTGRES_DB=root
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
+    ports:
+      - '5432:5432'
+    volumes:
+      - 'db:/var/lib/postgresql/data'
+      - './schema/sqldb:/docker-entrypoint-initdb.d/'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    networks:
+      - replaceme
+  mongo:
+    image: "mongo:4.4.14"
+    container_name: replaceme_mongo
+    ports:
+      - 27017:27017
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=root
+      - MONGO_INITDB_DATABASE=mongo_db
+    networks:
+      - replaceme
+  redis:
+    image: redis:6.2-alpine
+    container_name: replaceme_redis
+    restart: always
+    ports:
+      - '6379:6379'
+    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    volumes: 
+      - cache:/data
+    networks:
+      - replaceme
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   # environment:
+  #   ports:
+  #     - '8080:8080'
+  #   networks:
+  #     - replaceme
+
+volumes:
+  db: null
+  cache: null
+
+networks:
+  replaceme:
+    name: replaceme
+    driver: bridge

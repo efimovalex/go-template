@@ -1,0 +1,78 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Python related
+__pycache__
+*.pyc
+
+# no images
+# *.png - allow for assets
+*.gif
+*.jpg
+*.jpeg
+
+# Test binary, build with `go test -c`
+*.test
+.testCoverage.txt
+
+# old stuff
+*_old.*
+
+# IDE specific
+.vscode
+.idea
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+bin
+*_old.*
+_*
+*.paw
+.build_counter
+.DS_Store
+.testCoverage.txt
+
+# GAE config files
+# *.yaml
+
+# built project files
+services/api/api
+
+# temp. copied config
+services/*/config*
+/k8s/databases/postgresql/credentials.json
+
+# generated doc html
+docs/api/html/index.html
+*.html
+!data/views/*.html
+!data/views/owner/*.html
+!data/views/others/*.html
+!data/email-templates/stylist/*.html
+!data/email-templates/customer/*.html
+!data/email-templates/customer/personalization/*.html
+
+# scripts config file
+libs/general/config/config_script.toml
+
+# coverage
+.coverage
+
+# test binaries
+.coverage
+slc
+!slc/
+
+# .env
+.env
+# Local Netlify folder
+.netlify
+
+# local dev
+tmp/
+.air.conf
+salonlab-main
+~$*.xlsx
