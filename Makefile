@@ -14,7 +14,7 @@ help: ## This help.
 
 test: ## Runs the tests
 	@for package in ${PKG_LIST} ; do \
-		pkgcov=$$(go test -covermode=atomic -coverprofile="$(COVERAGE_DIR)/$$(basename $${package}).cover" "$${package}"); \
+		pkgcov=$$(go test -covermode=count -coverprofile="$(COVERAGE_DIR)/$$(basename $${package}).cov" "$${package}"); \
 		pcoverage=$$(echo $$pkgcov| grep "coverage" | sed -E "s/.*coverage: ([0-9]*\.[0-9]+)\% of statements/\1/g") ;\
 		if [ ! -z "$$pcoverage" ]; then \
 			if [ $$(echo $${pcoverage%%.*}) -lt $(MINCOVERAGE) ] ; then \
@@ -28,6 +28,13 @@ test: ## Runs the tests
 			echo "➖ No tests for $$package" ;\
 		fi \
 	done
+	@echo 'mode: count' > "${COVERAGE_DIR}"/coverage.cov
+	@for fcov in "$(COVERAGE_DIR)"/*.cov; do \
+		if [ $$fcov != "$(COVERAGE_DIR)/coverage.cov" ]; then \
+			tail -q -n +2 $$fcov >> $(COVERAGE_DIR)/coverage.cov ;\
+		fi \
+	done
+	@echo "coverage: $$(go tool cover -func=$(COVERAGE_DIR)/coverage.cov | grep 'total' | awk '{print substr($$3, 1, length($$3)-1)}')% of project"
 
 	
 build: ## Builds go binary
@@ -47,8 +54,9 @@ down: ## Removes docker containers for dependent services
 	@docker-compose down --remove-orphans
 
 deps: ## Fetches go mod dependencies
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.46.2
 	@go mod tidy
-	@go mod download
+	@go mod download		
 
 clean: down ## Removes all docker containers and volumes
 	docker system prune --volumes --force
