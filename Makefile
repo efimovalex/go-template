@@ -12,7 +12,7 @@ PKG_LIST:=$(shell  go list ./... | grep -v /vendor/)
 help: ## This help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-test: ## Runs the tests
+test: lint ## Runs the tests
 	@for package in ${PKG_LIST} ; do \
 		pkgcov=$$(go test -covermode=count -coverprofile="$(COVERAGE_DIR)/$$(basename $${package}).cov" "$${package}"); \
 		pcoverage=$$(echo $$pkgcov| grep "coverage" | sed -E "s/.*coverage: ([0-9]*\.[0-9]+)\% of statements/\1/g") ;\
@@ -34,8 +34,18 @@ test: ## Runs the tests
 			tail -q -n +2 $$fcov >> $(COVERAGE_DIR)/coverage.cov ;\
 		fi \
 	done
-	@echo "coverage: $$(go tool cover -func=$(COVERAGE_DIR)/coverage.cov | grep 'total' | awk '{print substr($$3, 1, length($$3)-1)}')% of project"
-
+	@echo
+	@pcoverage=$$(go tool cover -func=$(COVERAGE_DIR)/coverage.cov | grep 'total' | awk '{print substr($$3, 1, length($$3)-1)}');\
+	echo "coverage: $$pcoverage% of project" ;\
+	if [ $$(echo $${pcoverage%%.*}) -lt $$MINCOVERAGE ] ; then \
+      echo "🚨 Test coverage of project is $$pcoverage%" ;\
+      echo "FAIL" ;\
+      exit 1 ;\
+	else \
+		echo "🟢 Test coverage of project is $$pcoverage%";\
+	fi
+lint:
+	golangci-lint run ./...
 	
 build: ## Builds go binary
 	go build -o ./$(BINARY_NAME) cmd/main.go

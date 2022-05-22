@@ -33,7 +33,7 @@ func TestHealth_Check(t *testing.T) {
 	assert.NoError(t, err)
 	mock.ExpectPing().WillReturnError(errors.New("ping error"))
 	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
-	mockDB.Ping()
+
 	defer mockDB.Close()
 
 	redisClientMock, redismock := redismock.NewClientMock()

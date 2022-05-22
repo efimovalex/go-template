@@ -55,14 +55,6 @@ func (r *REST) LogRequestMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-type interceptingWriter struct {
-	count int64
-	code  int
-	http.ResponseWriter
-	wroteHeader  bool
-	responseData bytes.Buffer
-}
-
 // adds the current time to the time context value
 // should be added first to the Middleware chain
 func addTimeContextMiddleware(next http.Handler) http.Handler {

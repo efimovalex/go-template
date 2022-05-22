@@ -11,7 +11,8 @@ import (
 func TestClient_FindOneUserByEmail(t *testing.T) {
 	db, err := New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", zap.NewNop().Sugar())
 	defer func() {
-		db.Exec("TRUNCATE TABLE users")
+		_, err = db.Exec("TRUNCATE TABLE users")
+		assert.NoError(t, err)
 	}()
 	assert.NoError(t, err)
 	u := User{
@@ -68,7 +69,8 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 func TestClient_InsertUser(t *testing.T) {
 	db, err := New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", zap.NewNop().Sugar())
 	defer func() {
-		db.Exec("TRUNCATE TABLE users")
+		_, err = db.Exec("TRUNCATE TABLE users")
+		assert.NoError(t, err)
 	}()
 	assert.NoError(t, err)
 	u := User{

@@ -10,17 +10,6 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	// BuildName data
-	BuildName = "replaceme"
-	// BuildDate data
-	BuildDate string
-	// BuildBranch data
-	BuildBranch string
-	// BuildNumber data
-	BuildNumber string
-)
-
 // main - main entry point that loads configuration and starts the services
 func main() {
 	// bootstrap logger
@@ -53,7 +42,7 @@ func main() {
 		os.Exit(1)
 	}
 	log := logger.Sugar()
-	defer log.Sync()
+	defer func() { _ = log.Sync() }()
 
 	log.Infow("config loaded", "config", cfg)
 
