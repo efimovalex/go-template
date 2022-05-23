@@ -11,7 +11,7 @@ The development setup depends on the following tools:
 - go
 - docker
 - docker-compose
-- golint
+- golangci-lint
 
 ### Operations
 
