@@ -29,7 +29,7 @@ type Server struct {
 }
 
 func New(cfg *config.Config, logger *zap.SugaredLogger) (*Server, error) {
-	db, err := sqldb.New(cfg.Database.Host, cfg.Database.Port, cfg.Database.User, cfg.Database.Password, cfg.Database.Name, cfg.Database.SSLMode, logger)
+	db, err := sqldb.New(cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Name, cfg.Postgres.SSLMode, logger)
 	if err != nil {
 		return nil, err
 	}

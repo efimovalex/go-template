@@ -15,7 +15,7 @@ type Config struct {
 	Static      Static
 	HealthCheck HealthCheck
 
-	Database Database
+	Postgres Postgres
 	Mongo    Mongo
 	Redis    Redis
 
@@ -46,8 +46,8 @@ type Logging struct {
 	Development bool
 }
 
-// Database configuration
-type Database struct {
+// Postgres configuration
+type Postgres struct {
 	Host     string
 	Name     string
 	User     string
