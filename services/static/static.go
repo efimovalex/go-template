@@ -15,10 +15,6 @@ type Static struct {
 	logger *zap.SugaredLogger
 }
 
-func New(port string, logger *zap.SugaredLogger) *Static {
-	return &Static{srv: &http.Server{Addr: ":" + port}, logger: logger}
-}
-
 func (s *Static) Start() {
 	s.srv.Handler = http.FileServer(http.Dir("./static"))
 	s.logger.Infow("Starting static service", "addr", s.srv.Addr)

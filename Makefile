@@ -28,7 +28,7 @@ test: lint ## Runs the tests
 			echo "➖ No tests for $$package" ;\
 		fi \
 	done
-	@echo 'mode: count' > "${COVERAGE_DIR}"/coverage.cov
+	@echo 'mode: count' > "$(COVERAGE_DIR)"/coverage.cov
 	@for fcov in "$(COVERAGE_DIR)"/*.cov; do \
 		if [ $$fcov != "$(COVERAGE_DIR)/coverage.cov" ]; then \
 			tail -q -n +2 $$fcov >> $(COVERAGE_DIR)/coverage.cov ;\
@@ -48,14 +48,15 @@ lint:
 	golangci-lint run ./...
 	
 build: ## Builds go binary
-	go build -o ./$(BINARY_NAME) cmd/main.go
+	go build -o ./build/$(BINARY_NAME) cmd/replaceme/main.go
+	go build -o ./build/$(BINARY_NAME)_static cmd/static/main.go
 
 run: ## Runs main package
-	go run cmd/main.go;
+	go run cmd/replaceme/main.go;
 
 swag:  ## Generate swagger documentation json/yaml
 	@swag --version
-	@swag init -p pascalcase -g ../cmd/main.go -o docs/swagger -d ./services/,./internal,./pkg --md docs
+	@swag init -p pascalcase -g ../cmd/replaceme/main.go -o docs/swagger -d ./services/,./internal,./pkg --md docs
 	
 up: ## Starts docker containers for dependent services
 	@docker-compose up -d --build --remove-orphans
