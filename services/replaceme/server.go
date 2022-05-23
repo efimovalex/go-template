@@ -53,7 +53,7 @@ func New(cfg *config.Config, logger *zap.SugaredLogger) (*Server, error) {
 	}, nil
 }
 
-func (s *Server) Start() int {
+func (s *Server) Start() {
 	// start health check server
 	hc := healthcheck.New(s.DB, s.Mongo, s.Redis, s.logger, s.cfg.HealthCheck.Port)
 	go hc.Start()
@@ -80,7 +80,7 @@ func (s *Server) Start() int {
 				hc.Stop()
 				r.Stop()
 
-				return 0
+				return
 			}
 
 			// break loop

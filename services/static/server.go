@@ -6,38 +6,29 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/go-chi/chi"
 	"go.uber.org/zap"
 
 	"github.com/iconimpact/replaceme/config"
-	"github.com/iconimpact/replaceme/internal/mongodb"
-	"github.com/iconimpact/replaceme/internal/redisdb"
-	"github.com/iconimpact/replaceme/internal/sqldb"
 )
 
 type Server struct {
-	cfg *config.Config
-
-	DB    *sqldb.Client
-	Mongo *mongodb.Client
-	Redis *redisdb.Client
-
-	REST *chi.Mux
-
+	cfg    *config.Config
 	logger *zap.SugaredLogger
+
+	Static *Static
 }
 
 func New(cfg *config.Config, logger *zap.SugaredLogger) (*Server, error) {
-
 	return &Server{
-		cfg: cfg,
+		cfg:    cfg,
+		logger: logger,
 	}, nil
 }
 
-func (s *Server) Start() int {
+func (s *Server) Start() {
 	// start static file server
-	st := &Static{srv: &http.Server{Addr: ":" + s.cfg.Static.Port}, logger: s.logger}
-	go st.Start()
+	s.Static = &Static{srv: &http.Server{Addr: ":" + s.cfg.Static.Port}, logger: s.logger}
+	go s.Static.Start()
 
 	// trap signals
 	sigChan := make(chan os.Signal, 1)
@@ -55,9 +46,9 @@ func (s *Server) Start() int {
 
 			if sig == syscall.SIGINT || sig == syscall.SIGKILL || sig == syscall.SIGTERM {
 
-				st.Stop()
+				s.Static.Stop()
 
-				return 0
+				return
 			}
 
 			// break loop
