@@ -36,16 +36,15 @@ test: lint ## Runs the tests
 		else \
 			echo "➖ No tests for $$package" ;\
 		fi \
-	done ;\
-	echo ;\
-	echo 'mode: atomic' > "$(COVERAGE_DIR)"/coverage.cov ;\
+	done 
+	@echo 'mode: atomic' > "$(COVERAGE_DIR)"/coverage.cov ;\
 	for fcov in "$(COVERAGE_DIR)"/*.cov; do \
 		if [ $$fcov != "$(COVERAGE_DIR)/coverage.cov" ]; then \
 			tail -q -n +2 $$fcov >> $(COVERAGE_DIR)/coverage.cov ;\
 		fi \
 	done
-	echo ;\
-	pcoverage=$$(go tool cover -func=$(COVERAGE_DIR)/coverage.cov | grep 'total' | awk '{print substr($$3, 1, length($$3)-1)}');\
+	@echo 
+	@pcoverage=$$(go tool cover -func=$(COVERAGE_DIR)/coverage.cov | grep 'total' | awk '{print substr($$3, 1, length($$3)-1)}');\
 	echo "coverage: $$pcoverage% of project" ;\
 	if [ $$(echo $${pcoverage%%.*}) -lt $$MINCOVERAGE ] ; then \
       echo "🚨 Test coverage of project is $$pcoverage%" ;\
