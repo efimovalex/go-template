@@ -9,7 +9,9 @@ import (
 	"time"
 )
 
-const CtxKeyTime = "time"
+type CtxKey string
+
+const CtxKeyTime = CtxKey("time")
 
 type StatusRecorder struct {
 	http.ResponseWriter

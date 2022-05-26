@@ -43,7 +43,7 @@ func TestREST_GetRoot(t *testing.T) {
 		{
 			name:               "TestREST_GetRoot-Success",
 			body:               "",
-			expectedStatusCode: http.StatusOK,
+			expectedStatusCode: http.StatusNoContent,
 			expectedBody:       `{"message":"Hello, world!"}`,
 		},
 	}

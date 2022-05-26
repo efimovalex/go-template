@@ -14,9 +14,7 @@ import (
 
 type Health struct {
 	logger *zap.SugaredLogger
-	port   string
-
-	srv *http.Server
+	srv    *http.Server
 
 	// Add your depending services that matter to healthcheck here
 	DB    *sqldb.Client

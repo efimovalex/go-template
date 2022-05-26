@@ -69,22 +69,16 @@ func (s *Server) Start() {
 	s.logger.Info("Entering run loop")
 	// run until signal or error
 
-	for {
-		select {
-		case sig := <-sigChan:
-			// log signal
-			s.logger.Infof("Received signal: %d (%s)", sig, sig)
+	for sig := range sigChan {
+		// log signal
+		s.logger.Infof("Received signal: %d (%s)", sig, sig)
 
-			if sig == syscall.SIGINT || sig == syscall.SIGKILL || sig == syscall.SIGTERM {
+		if sig == syscall.SIGINT || sig == syscall.SIGKILL || sig == syscall.SIGTERM {
 
-				hc.Stop()
-				r.Stop()
+			hc.Stop()
+			r.Stop()
 
-				return
-			}
-
-			// break loop
-			break
+			return
 		}
 	}
 }

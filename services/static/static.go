@@ -9,8 +9,7 @@ import (
 )
 
 type Static struct {
-	srv  *http.Server
-	port string
+	srv *http.Server
 
 	logger *zap.SugaredLogger
 }

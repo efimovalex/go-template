@@ -37,7 +37,6 @@ func (db *Client) FindOneUserByEmail(email string) (*User, error) {
 		}
 		return nil, errors.E(err, errors.Internal)
 	}
-	db.Exec("SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));")
 	return &u, nil
 }
 
