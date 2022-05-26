@@ -7,7 +7,6 @@ import (
 
 	"github.com/iconimpact/replaceme/config"
 	server "github.com/iconimpact/replaceme/services/replaceme"
-	"github.com/iconimpact/replaceme/services/static"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -42,15 +41,6 @@ func run(args []string, stdout io.Writer) error {
 	defer func() { _ = log.Sync() }()
 
 	log.Infow("config loaded", "config", cfg)
-
-	static, err := static.New(cfg, log)
-	if err != nil {
-		log.Errorf("failed init static service: %s", err.Error())
-
-		return err
-	}
-
-	go static.Start()
 
 	// start services
 	server, err := server.New(cfg, log)

@@ -61,6 +61,9 @@ swag:  ## Generate swagger documentation json/yaml
 up: ## Starts docker containers for dependent services
 	@docker-compose up -d --build --remove-orphans
 
+stop: ## Stops docker containers for dependent services
+	@docker-compose stop
+
 down: ## Removes docker containers for dependent services
 	@docker-compose down --remove-orphans
 

@@ -51,20 +51,20 @@ func New(DB *sqldb.Client, Mongo *mongodb.Client, redis *redisdb.Client, port st
 	return rest
 }
 
-func (r *REST) Start() {
-	r.logger.Infow("Starting REST service", "addr", r.srv.Addr)
+func (rest *REST) Start() {
+	rest.logger.Infow("Starting REST service", "addr", rest.srv.Addr)
 
-	if err := r.srv.ListenAndServe(); err != http.ErrServerClosed {
+	if err := rest.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
-		r.logger.Fatalf("healthcheck server error: %v", err)
+		rest.logger.Fatalf("healthcheck server error: %v", err)
 	}
 }
 
-func (r *REST) Stop() {
+func (rest *REST) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	if err := r.srv.Shutdown(ctx); err != nil {
+	if err := rest.srv.Shutdown(ctx); err != nil {
 		// Error from closing listeners, or context timeout:
-		r.logger.Errorf("healthcheck server shutdown error: %v", err)
+		rest.logger.Errorf("healthcheck server shutdown error: %v", err)
 	}
 }
