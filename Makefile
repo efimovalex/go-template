@@ -12,13 +12,13 @@ PKG_LIST:=$(shell  go list ./... | grep -v /vendor/)
 help: ## This help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
 
-test: lint ## Runs the tests
+test: lint ## Runs the linter and the tests
 	@if [ -d "$(COVERAGE_DIR)" ]; then rm -rf "$(COVERAGE_DIR)/*"; fi
 	@for package in ${PKG_LIST} ; do \
 		pkgcov=$$(go test -covermode=atomic -race -coverprofile="$(COVERAGE_DIR)/$$(basename $${package}).cov" "$${package}"); \
 		retVal=$$? ;\
 		if [ $$retVal -ne 0 ]; then \
-			echo "🚨 FAIL" ;\
+			echo "🚨 TEST FAIL" ;\
 			echo "$$pkgcov"; \
 			echo ;\
 			exit $$retVal; \
@@ -53,7 +53,8 @@ test: lint ## Runs the tests
 	else \
 		echo "🟢 Test coverage of project is $$pcoverage%";\
 	fi
-lint:
+
+lint: ## Runs the linter
 	golangci-lint run ./...
 	
 build: ## Builds go binary
@@ -77,6 +78,7 @@ down: ## Removes docker containers for dependent services
 	@docker-compose down --remove-orphans
 
 deps: ## Fetches go mod dependencies
+	@go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.46.2
 	@go mod tidy
 	@go mod download		
@@ -84,3 +86,13 @@ deps: ## Fetches go mod dependencies
 clean: down ## Removes all docker containers and volumes
 	docker system prune --volumes --force
 	
+## Migration commands
+
+migration: 
+	@echo "Enter the name of the migration: e.g. 'HVO-001-create-users-table' :" ;\
+	read name;\
+	migrate -database postgres create -ext sql -dir ./schema/sqldb/ -digits 3 -seq $$name
+migrate: 
+	@migrate -path ./schema/sqldb -database "postgres://root:root@localhost:5432/replaceme?sslmode=disable" up
+revert:
+	@migrate -path ./schema/sqldb -database "postgres://root:root@localhost:5432/replaceme?sslmode=disable" down
