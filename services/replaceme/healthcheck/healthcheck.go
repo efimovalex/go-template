@@ -12,6 +12,12 @@ import (
 	"go.uber.org/zap"
 )
 
+type HealthCheck interface {
+	Start()
+	Stop()
+
+	Check(w http.ResponseWriter, r *http.Request)
+}
 type Health struct {
 	logger *zap.SugaredLogger
 	srv    *http.Server

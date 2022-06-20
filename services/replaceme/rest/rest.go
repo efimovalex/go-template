@@ -5,15 +5,23 @@ import (
 	"net/http"
 	"time"
 
+	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/iconimpact/go-core/errors"
+	auth "github.com/iconimpact/replaceme/internal/auth0"
 	"github.com/iconimpact/replaceme/internal/mongodb"
 	"github.com/iconimpact/replaceme/internal/redisdb"
 	"github.com/iconimpact/replaceme/internal/sqldb"
 	"go.uber.org/zap"
 )
 
-type REST struct {
+type REST interface {
+	Start()
+	Stop()
+}
+
+type R struct {
 	Router *chi.Mux
 	srv    *http.Server
 
@@ -21,15 +29,22 @@ type REST struct {
 	Mongo *mongodb.Client
 	Redis *redisdb.Client
 
+	AuthMiddleware *jwtmiddleware.JWTMiddleware
+
 	logger *zap.SugaredLogger
 }
 
-func New(DB *sqldb.Client, Mongo *mongodb.Client, redis *redisdb.Client, port string, logger *zap.SugaredLogger) *REST {
-	rest := &REST{
+func New(DB *sqldb.Client, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, port string, logger *zap.SugaredLogger) (REST, error) {
+	rest := &R{
 		DB:     DB,
 		Mongo:  Mongo,
 		Redis:  redis,
 		logger: logger,
+	}
+	var err error
+	rest.AuthMiddleware, err = rest.AuthMiddlewareSetup(a)
+	if err != nil {
+		return nil, errors.E(err, errors.Internal, "unable to setup jwt middleware")
 	}
 
 	mux := chi.NewRouter()
@@ -43,15 +58,17 @@ func New(DB *sqldb.Client, Mongo *mongodb.Client, redis *redisdb.Client, port st
 	mux.Use(middleware.Recoverer)
 	mux.Use(middleware.Timeout(180 * time.Second))
 
+	mux.Use(CORSMiddleware)
+
 	rest.Router = mux
 	rest.AddRoutes()
 
 	rest.srv = &http.Server{Addr: ":" + port, Handler: rest.Router}
 
-	return rest
+	return rest, nil
 }
 
-func (rest *REST) Start() {
+func (rest *R) Start() {
 	rest.logger.Infow("Starting REST service", "addr", rest.srv.Addr)
 
 	if err := rest.srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -60,7 +77,7 @@ func (rest *REST) Start() {
 	}
 }
 
-func (rest *REST) Stop() {
+func (rest *R) Stop() {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	if err := rest.srv.Shutdown(ctx); err != nil {

@@ -9,12 +9,11 @@ import (
 )
 
 func TestClient_FindOneUserByEmail(t *testing.T) {
-	db, err := New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", zap.NewNop().Sugar())
+	db := NewTestDB(t)
 	defer func() {
-		_, err = db.Exec("TRUNCATE TABLE users")
+		err := db.resetTable("users")
 		assert.NoError(t, err)
 	}()
-	assert.NoError(t, err)
 	u := User{
 		Email:       "test@test.com",
 		Password:    "test",
@@ -23,7 +22,7 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 		FirstName:   "firstname",
 	}
 
-	err = db.InsertUser(&u)
+	err := db.InsertUser(&u)
 	assert.NoError(t, err)
 
 	type args struct {

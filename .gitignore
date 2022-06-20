@@ -63,8 +63,7 @@ libs/general/config/config_script.toml
 
 # test binaries
 .coverage
-slc
-!slc/
+.build
 
 # .env
 .env

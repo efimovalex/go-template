@@ -22,6 +22,6 @@ type Message struct {
 // @Failure 422 {object} Message "Params validation error"
 // @Failure 500 {object} Message "Internal server error"
 // @Router / [get]
-func (rest *REST) GetRoot(resp http.ResponseWriter, r *http.Request) {
+func (rest *R) GetRoot(resp http.ResponseWriter, r *http.Request) {
 	respond.JSON(resp, rest.logger.Desugar(), http.StatusOK, Message{"Hello, world!"})
 }

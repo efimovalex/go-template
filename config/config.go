@@ -2,110 +2,90 @@ package config
 
 import (
 	// to embed default config
+	"context"
 	_ "embed"
-	"os"
 
-	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-envconfig"
 )
 
 // Config used globally
 type Config struct {
-	REST        REST
-	Static      Static
-	HealthCheck HealthCheck
+	REST        REST        `env:",prefix=REST_"`
+	Static      Static      `env:",prefix=STATIC_"`
+	HealthCheck HealthCheck `env:",prefix=HC_"`
 
-	Postgres Postgres
-	Mongo    Mongo
-	Redis    Redis
+	Postgres Postgres `env:",prefix=POSTGRES_"`
+	Mongo    Mongo    `env:",prefix=MONGO_"`
+	Redis    Redis    `env:",prefix=REDIS_"`
+
+	Auth Auth `env:",prefix=AUTH_"`
 
 	Logging Logging
 }
 
 // REST configuration
 type REST struct {
-	Port    string
-	Timeout int
-}
-
-// Static configuration
-type Static struct {
-	Port    string
-	Timeout int
+	Port string `env:"PORT,default=8080"`
 }
 
 // HealthCheck configuration
 type HealthCheck struct {
-	Port    string
-	Timeout int
+	Port string `env:"PORT,default=8081"`
+}
+
+// Static configuration
+type Static struct {
+	Port string `env:"PORT,default=8083"`
 }
 
 // Logging configuration
 type Logging struct {
-	Level       string
-	Development bool
+	Level       string `env:"LEVEL,default=info"`
+	Development bool   `env:"DEV,default=false"`
 }
 
 // Postgres configuration
 type Postgres struct {
-	Host     string
-	Name     string
-	User     string
-	Password string
-	Port     string
-	SSLMode  string
+	Host     string `env:"HOST,default=localhost"`
+	Name     string `env:"NAME,default=replaceme"`
+	User     string `env:"USER,default=replaceme"`
+	Password string `env:"PASSWORD,default=replaceme"`
+	Port     string `env:"PORT,default=5432"`
+	SSLMode  string `env:"SSL_MODE,default=disable"`
 }
 
 // Mongo configuration
 type Mongo struct {
-	Host     string
-	Name     string
-	User     string
-	Password string
-	Port     string
-	SSL      bool
+	Host     string `env:"HOST,default=localhost"`
+	Name     string `env:"NAME,default=mongo_db"`
+	User     string `env:"USER,default=root"`
+	Password string `env:"PASSWORD,default=root"`
+	Port     string `env:"PORT,default=27017"`
+	SSLMode  bool   `env:"SSL_MODE,default=false"`
 }
 
 // Redis configuration
 type Redis struct {
-	Host     string
-	Port     string
-	Password string
-	Database int
+	Host     string `env:"HOST,default=localhost"`
+	Database int    `env:"NAME,default=0"`
+	User     string `env:"USER,default=root"`
+	Password string `env:"PASSWORD,default=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81"` // this is from docker-compose.yml not a real password
+	Port     string `env:"PORT,default=6379"`
 }
 
-//go:embed config_dev.toml
-var configDev string
+type Auth struct {
+	Domain   string `env:"DOMAIN,default=replaceme.eu.auth0.com"`
+	Audience string `env:"AUDIENCE,default=https://replaceme.com"`
+}
 
-// LoadDefaultConfig loads the default config
-func LoadDefaultConfig() (*Config, error) {
+// Load reads info from TOML file at relative path
+func Load() (*Config, error) {
 	var c Config
-	_, err := toml.Decode(configDev, &c)
-	if err != nil {
+	ctx := context.Background()
+	if err := envconfig.Process(ctx, &c); err != nil {
 		return nil, errors.Wrapf(err, "failed to decode default config")
 	}
 
 	return &c, nil
-}
-
-// Load reads info from TOML file at relative path
-func Load(filename string) (*Config, error) {
-	configFile := filename
-	_, err := os.Stat(configFile)
-	if err != nil {
-		return nil, errors.Wrapf(err, "config file is missing: %s", configFile)
-	}
-
-	var config Config
-	if _, err := toml.DecodeFile(configFile, &config); err != nil {
-		return nil, errors.Wrapf(err, "parsing config file: %s", configFile)
-	}
-
-	/*
-		// just do the secret value injection on production
-		if config.Server.Env == "prod" {
-			config = addSecrets(config)
-		}*/
-
-	return &config, nil
 }

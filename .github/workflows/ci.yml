@@ -1,0 +1,44 @@
+name: CI-pipeline
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+    - name: Build the docker compose stack
+      run: |
+        make deps
+    
+    - name: Linter
+      run: |
+        make lint
+        
+    - name: Build the docker compose stack
+      run: |
+        make up
+
+    - name: Build binary
+      run: |
+        make build
+
+    - name: Test
+      run: |
+        make test
+    
+    - name: Build image
+      run: | 
+        make build
+    
+    - name: Cleanup job
+      if: always()
+      run: | 
+        make clean

@@ -4,8 +4,10 @@ import (
 
 	// sql driver
 	"fmt"
+	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/stretchr/testify/assert"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
@@ -53,4 +55,22 @@ func (c *Client) Ping() error {
 
 func initPSQL() sq.StatementBuilderType {
 	return sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+}
+
+func NewTestDB(t *testing.T) *Client {
+	if t == nil {
+		return nil
+	}
+	db, err := New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", zap.NewNop().Sugar())
+	assert.NoError(t, err)
+	return db
+}
+
+// USE ONLY FOR TESTING
+func (db *Client) resetTable(table string) error {
+	_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
+	if err != nil {
+		return err
+	}
+	return nil
 }

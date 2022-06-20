@@ -26,7 +26,7 @@ func main() {
 }
 
 func run(args []string, stdout io.Writer) error {
-	cfg, err := loadConfig()
+	cfg, err := config.Load()
 	if err != nil {
 		fmt.Printf("config load error %s", err.Error())
 		return err
@@ -53,15 +53,6 @@ func run(args []string, stdout io.Writer) error {
 	server.Start()
 
 	return nil
-}
-
-func loadConfig() (*config.Config, error) {
-	configFile := os.Getenv("CONFIG_FILE")
-	if configFile == "" {
-		return nil, fmt.Errorf("config file not specified - CONFIG_FILE env var must be set")
-	}
-
-	return config.Load(configFile)
 }
 
 func loadLogger(cfg *config.Config) (*zap.SugaredLogger, error) {
