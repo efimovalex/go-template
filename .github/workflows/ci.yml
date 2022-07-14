@@ -43,7 +43,7 @@ jobs:
 
     - name: Test
       run: |
-        make test
+        make test-ci
 
     - name: Build docs
       run: |

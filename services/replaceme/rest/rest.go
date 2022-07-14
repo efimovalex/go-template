@@ -120,10 +120,5 @@ type errorResponse struct {
 // base on app err Kind, Msg from app err HTTPMessage.
 // Logs the error if l is not nil.
 func (rest *R) JSONError(w http.ResponseWriter, status int, err error) {
-	var errRsp interface{}
-
-	// set custom app err Message
-	errRsp = errorResponse{Message: err.Error()}
-
-	rest.JSON(w, status, errRsp)
+	rest.JSON(w, status, errorResponse{Message: err.Error()})
 }

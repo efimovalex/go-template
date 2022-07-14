@@ -103,6 +103,7 @@ func TestServer_Start(t *testing.T) {
 				sigChan:     make(chan os.Signal, 1),
 				HealthCheck: h,
 				REST:        r,
+				cfg:         &config.Config{},
 			}
 
 			go s.Start()
