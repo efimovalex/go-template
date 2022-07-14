@@ -9,8 +9,9 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
 	auth "github.com/iconimpact/replaceme/internal/auth0"
+	"github.com/rs/zerolog"
+
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestREST_LogRequestMiddleware(t *testing.T) {
@@ -138,7 +139,7 @@ func TestUserCtx(t *testing.T) {
 		respBody := respRecorder.Body.String()
 		assert.Equal(
 			t, http.StatusUnauthorized, respRecorder.Code, "body:\n%s", respBody)
-		assert.Equal(t, `{"msg":"invalid auth claims"}`, respBody)
+		assert.Equal(t, `{"message":"invalid auth claims"}`, respBody)
 
 	})
 
@@ -174,9 +175,9 @@ func TestR_AuthMiddlewareSetup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &R{
-				logger: zap.NewNop().Sugar(),
+				logger: zerolog.Nop(),
 			}
-			got, err := r.AuthMiddlewareSetup(auth.New("http://some-domain", []string{"some-audience"}, zap.NewNop().Sugar()))
+			got, err := r.AuthMiddlewareSetup(auth.New("http://some-domain", []string{"some-audience"}))
 			if (err != nil) != tt.wantErr {
 				t.Errorf("R.AuthMiddlewareSetup() error = %v, wantErr %v", err, tt.wantErr)
 				return

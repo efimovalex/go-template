@@ -8,10 +8,10 @@ services:
     container_name: replaceme_postgres
     environment:
       - POSTGRES_DB=root
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=root
+      - POSTGRES_USER=replaceme
+      - POSTGRES_PASSWORD=replaceme
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - 'db:/var/lib/postgresql/data'
       - './schema/sqldb:/docker-entrypoint-initdb.d/'

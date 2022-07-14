@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -14,19 +15,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.uber.org/zap"
 )
 
 func TestHealth_Check(t *testing.T) {
-	logger := zap.NewNop().Sugar()
+	db := sqldb.NewTestDB(t)
 
-	db, err := sqldb.New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", logger)
-	assert.NoError(t, err)
+	mdb := mongodb.NewTestDB(t)
 
-	mdb, err := mongodb.New("localhost", "27017", "root", "root", "mongo_db", false, logger)
-	assert.NoError(t, err)
-
-	rdb, err := redisdb.New("localhost", "6379", "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", 15, logger)
+	rdb, err := redisdb.New("localhost", "6379", "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", 15)
 	assert.NoError(t, err)
 
 	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
@@ -67,7 +63,7 @@ func TestHealth_Check(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.DB, tt.Mongo, tt.Redis, logger, "")
+			h := New(tt.DB, tt.Mongo, tt.Redis, "")
 
 			req, err := http.NewRequest("GET", "/healthcheck", nil)
 			assert.NoError(t, err)
@@ -80,30 +76,24 @@ func TestHealth_Check(t *testing.T) {
 	}
 }
 
-// func TestHealth_StartStop(t *testing.T) {
-// 	logger := zap.NewNop().Sugar()
-// 	db, err := sqldb.New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", logger)
-// 	assert.NoError(t, err)
+func TestHealth_Stop(t *testing.T) {
+	db := sqldb.NewTestDB(t)
+	mdb := mongodb.NewTestDB(t)
+	rdb := redisdb.NewTestDB(t)
 
-// 	mdb, err := mongodb.New("localhost", "27017", "root", "root", "mongo_db", false, logger)
-// 	assert.NoError(t, err)
+	h := New(db, mdb, rdb, "3000")
 
-// 	rdb, err := redisdb.New("localhost", "6379", "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", 15, logger)
-// 	assert.NoError(t, err)
-// 	h := New(db, mdb, rdb, logger, "3000")
+	testServer := httptest.NewServer(http.HandlerFunc(h.Check))
+	defer testServer.Close()
+	h.srv = testServer.Config
 
-// 	testServer := httptest.NewServer(http.HandlerFunc(h.Check))
-// 	defer testServer.Close()
-// 	h.srv = testServer.Config
-// 	go h.Start()
+	resp, err := http.Get(testServer.URL + "/healthcheck")
+	assert.NoError(t, err)
 
-// 	resp, err := http.Get(testServer.URL + "/healthcheck")
-// 	assert.NoError(t, err)
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+	h.Stop()
 
-// 	assert.Equal(t, resp.StatusCode, http.StatusOK)
-// 	h.Stop()
-
-// 	_, err = http.Get(testServer.URL + "/healthcheck")
-// 	assert.Error(t, err)
-// 	assert.Equal(t, `Get "`+testServer.URL+`/healthcheck": dial tcp 127.0.0.1:`+strings.Split(testServer.URL, ":")[2]+`: connect: connection refused`, err.Error())
-// }
+	_, err = http.Get(testServer.URL + "/healthcheck")
+	assert.Error(t, err)
+	assert.Equal(t, `Get "`+testServer.URL+`/healthcheck": dial tcp 127.0.0.1:`+strings.Split(testServer.URL, ":")[2]+`: connect: connection refused`, err.Error())
+}

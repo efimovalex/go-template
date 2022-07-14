@@ -9,25 +9,24 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/iconimpact/replaceme/config"
+	"github.com/rs/zerolog/log"
 )
 
 type Server struct {
-	cfg    *config.Config
-	logger *zap.SugaredLogger
+	cfg *config.Config
 
 	Static *Static
 }
 
 func New(cfg *config.Config, logger *zap.SugaredLogger) (*Server, error) {
 	return &Server{
-		cfg:    cfg,
-		logger: logger,
+		cfg: cfg,
 	}, nil
 }
 
 func (s *Server) Start() {
 	// start static file server
-	s.Static = &Static{srv: &http.Server{Addr: ":" + s.cfg.Static.Port}, logger: s.logger}
+	s.Static = &Static{srv: &http.Server{Addr: ":" + s.cfg.Static.Port}}
 	go s.Static.Start()
 
 	// trap signals
@@ -35,12 +34,12 @@ func (s *Server) Start() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	// logging
-	s.logger.Info("Entering run loop")
+	log.Info().Msg("Entering run loop")
 	// run until signal or error
 
 	for sig := range sigChan {
 		// log signal
-		s.logger.Infof("Received signal: %d (%s)", sig, sig)
+		log.Info().Msgf("Received signal: %d (%s)", sig, sig)
 
 		if sig == syscall.SIGINT || sig == syscall.SIGKILL || sig == syscall.SIGTERM {
 

@@ -1,18 +1,17 @@
 package sqldb
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestClient_FindOneUserByEmail(t *testing.T) {
 	db := NewTestDB(t)
 	defer func() {
-		err := db.resetTable("users")
-		assert.NoError(t, err)
+		db.ResetTable(t, "users")
 	}()
 	u := User{
 		Email:       "test@test.com",
@@ -22,7 +21,8 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 		FirstName:   "firstname",
 	}
 
-	err := db.InsertUser(&u)
+	ctx := context.Background()
+	err := db.InsertUser(ctx, &u)
 	assert.NoError(t, err)
 
 	type args struct {
@@ -52,7 +52,7 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.FindOneUserByEmail(tt.args.email)
+			got, err := db.FindOneUserByEmail(ctx, tt.args.email)
 			if tt.wantErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, err, tt.wantErr.Error())
@@ -66,12 +66,10 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 }
 
 func TestClient_InsertUser(t *testing.T) {
-	db, err := New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", zap.NewNop().Sugar())
+	db := NewTestDB(t)
 	defer func() {
-		_, err = db.Exec("TRUNCATE TABLE users")
-		assert.NoError(t, err)
+		db.ResetTable(t, "users")
 	}()
-	assert.NoError(t, err)
 	u := User{
 		Email:       "test@test.com",
 		Password:    "test",
@@ -92,7 +90,7 @@ func TestClient_InsertUser(t *testing.T) {
 		{
 			name:    "Test reinsert user",
 			user:    &u,
-			wantErr: errors.New("user.go:69: conflict: user with email test@test.com does already exist"),
+			wantErr: errors.New("user with email test@test.com does already exist"),
 		},
 		{
 			name: "Test missing password",
@@ -102,13 +100,13 @@ func TestClient_InsertUser(t *testing.T) {
 				LastName:    "lastname",
 				FirstName:   "firstname",
 			},
-			wantErr: errors.New("user.go:53: bad request: password is required"),
+			wantErr: errors.New("password is required"),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-
-			err := db.InsertUser(tt.user)
+			ctx := context.Background()
+			err := db.InsertUser(ctx, tt.user)
 			if tt.wantErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, err, tt.wantErr.Error())

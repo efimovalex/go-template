@@ -2,7 +2,8 @@ package auth
 
 import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type Auth struct {
@@ -10,14 +11,13 @@ type Auth struct {
 	Audience []string
 
 	Middleware *jwtmiddleware.JWTMiddleware
-
-	logger *zap.SugaredLogger
+	logger     zerolog.Logger
 }
 
-func New(domain string, audience []string, logger *zap.SugaredLogger) *Auth {
+func New(domain string, audience []string) *Auth {
 	return &Auth{
 		Domain:   domain,
 		Audience: audience,
-		logger:   logger,
+		logger:   log.With().Str("component", "auth").Logger(),
 	}
 }

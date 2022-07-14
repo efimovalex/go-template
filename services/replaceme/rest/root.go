@@ -2,10 +2,9 @@ package rest
 
 import (
 	"net/http"
-
-	"github.com/iconimpact/go-core/respond"
 )
 
+// Message is a simple JSON response
 type Message struct {
 	Message string `json:"message"`
 }
@@ -23,5 +22,5 @@ type Message struct {
 // @Failure 500 {object} Message "Internal server error"
 // @Router / [get]
 func (rest *R) GetRoot(resp http.ResponseWriter, r *http.Request) {
-	respond.JSON(resp, rest.logger.Desugar(), http.StatusOK, Message{"Hello, world!"})
+	rest.JSON(resp, http.StatusOK, Message{"Hello, world!"})
 }

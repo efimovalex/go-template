@@ -2,14 +2,12 @@ package healthcheck
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
-	"github.com/iconimpact/go-core/respond"
-	"github.com/iconimpact/replaceme/internal/mongodb"
-	"github.com/iconimpact/replaceme/internal/redisdb"
-	"github.com/iconimpact/replaceme/internal/sqldb"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type HealthCheck interface {
@@ -18,24 +16,33 @@ type HealthCheck interface {
 
 	Check(w http.ResponseWriter, r *http.Request)
 }
+type Ping interface {
+	Ping() error
+}
+
 type Health struct {
-	logger *zap.SugaredLogger
+	logger zerolog.Logger
 	srv    *http.Server
 
 	// Add your depending services that matter to healthcheck here
-	DB    *sqldb.Client
-	Mongo *mongodb.Client
-	Redis *redisdb.Client
+	DB    Ping
+	Mongo Ping
+	Redis Ping
 }
 
-func New(DB *sqldb.Client, Mongo *mongodb.Client, Redis *redisdb.Client, logger *zap.SugaredLogger, port string) *Health {
+type HealthCheckResponse struct {
+	Message string   `json:"message"`
+	Errors  []string `json:"errors"`
+}
+
+func New(DB Ping, Mongo Ping, Redis Ping, port string) *Health {
 	h := &Health{
 		DB:    DB,
 		Mongo: Mongo,
 		Redis: Redis,
 		srv:   &http.Server{Addr: ":" + port},
 
-		logger: logger,
+		logger: log.With().Str("component", "healthcheck").Logger(),
 	}
 
 	h.srv.Handler = http.HandlerFunc(h.Check)
@@ -44,10 +51,10 @@ func New(DB *sqldb.Client, Mongo *mongodb.Client, Redis *redisdb.Client, logger 
 }
 
 func (h *Health) Start() {
-	h.logger.Infow("starting ealthcheck service", "addr", h.srv.Addr)
+	h.logger.Info().Msgf("starting ealthcheck service %s", h.srv.Addr)
 	if err := h.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
-		h.logger.Fatalf("healthcheck server error: %v", err)
+		h.logger.Fatal().Msgf("healthcheck server error: %v", err)
 	}
 }
 
@@ -56,7 +63,7 @@ func (h *Health) Stop() {
 	defer cancel()
 	if err := h.srv.Shutdown(ctx); err != nil {
 		// Error from closing listeners, or context timeout:
-		h.logger.Errorf("healthcheck server shutdown error: %v", err)
+		h.logger.Error().Err(err).Msgf("healthcheck server shutdown error")
 	}
 }
 
@@ -65,24 +72,40 @@ func (h *Health) Check(w http.ResponseWriter, r *http.Request) {
 	var extendErrs []string
 	errPostgres := h.DB.Ping()
 	if errPostgres != nil {
-		h.logger.Errorw("Unable to ping postgres", "error", errPostgres)
+		h.logger.Error().Err(errPostgres).Msgf("Unable to ping postgres")
 		extendErrs = append(extendErrs, "Unable to ping postgres")
 	}
 	errMongo := h.Mongo.Ping()
 	if errMongo != nil {
-		h.logger.Errorw("Unable to ping mongo", "error", errMongo)
+		h.logger.Error().Err(errMongo).Msgf("Unable to ping mongo")
 		extendErrs = append(extendErrs, "Unable to ping mongo")
 	}
 	errRedis := h.Redis.Ping()
 	if errRedis != nil {
-		h.logger.Errorw("Unable to ping redis", "error", errRedis)
+		h.logger.Error().Err(errRedis).Msgf("Unable to ping redis")
 		extendErrs = append(extendErrs, "Unable to ping redis")
 	}
 
 	if len(extendErrs) > 0 {
-		respond.JSON(w, h.logger.Desugar(), http.StatusInternalServerError, map[string]interface{}{"errors": extendErrs})
+		h.JSON(w, http.StatusInternalServerError, HealthCheckResponse{Message: "healthcheck failed", Errors: extendErrs})
 		return
 	}
 
-	respond.JSON(w, h.logger.Desugar(), http.StatusOK, map[string]interface{}{"message": "OK"})
+	h.JSON(w, http.StatusOK, HealthCheckResponse{Message: "OK"})
+}
+
+func (h *Health) JSON(w http.ResponseWriter, status int, v interface{}) {
+	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		panic("respond: " + err.Error())
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(status)
+
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		h.logger.Error().Err(err).Msg("error writing response")
+	}
 }

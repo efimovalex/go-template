@@ -13,8 +13,9 @@ import (
 	"github.com/auth0/go-jwt-middleware/v2/jwks"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
 	"github.com/iconimpact/go-core/errors"
-	"github.com/iconimpact/go-core/respond"
 	auth "github.com/iconimpact/replaceme/internal/auth0"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type CtxKey string
@@ -49,19 +50,20 @@ func (r *R) LogRequestMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(recorder, req)
 
-		r.logger.Debugw("Request received",
-			"Method", req.Method,
-			"URL", req.URL.String(),
-			"UserAgent", req.UserAgent(),
-			"Referrer", req.Referer(),
-			"RemoteIP", req.RemoteAddr,
-			"RequestData", string(bodyBytes),
-			"RequestSize", req.ContentLength,
-			"ResponseStatus", recorder.Status,
-			"ResponseData", recorder.Response.String(),
-			"ResponseSize", recorder.Count,
-			"Latency", fmt.Sprintf("%.6fs", time.Since(start).Seconds()),
-		)
+		log.Debug().
+			Dict("metadata", zerolog.Dict().
+				Str("Method", req.Method).
+				Str("URL", req.URL.String()).
+				Str("UserAgent", req.UserAgent()).
+				Str("Referrer", req.Referer()).
+				Str("RemoteIP", req.RemoteAddr).
+				Str("RequestData", string(bodyBytes)).
+				Int64("RequestSize", req.ContentLength).
+				Int("ResponseStatus", recorder.Status).
+				Str("ResponseData", recorder.Response.String()).
+				Int64("ResponseSize", recorder.Count).
+				Str("Latency", fmt.Sprintf("%.6fs", time.Since(start).Seconds())),
+			).Msg("request received")
 	})
 }
 
@@ -104,7 +106,7 @@ func (rest *R) UserCtx(next http.Handler) http.Handler {
 		cc, err := auth.ClaimsValue(r.Context())
 		if err != nil {
 			err := errors.E(err, errors.Unauthorized, "invalid auth claims")
-			respond.JSONError(w, rest.logger.Desugar(), err)
+			rest.JSONError(w, err)
 
 			return
 		}
@@ -117,7 +119,7 @@ func (rest *R) UserCtx(next http.Handler) http.Handler {
 	})
 }
 
-func (r *R) AuthMiddlewareSetup(a *auth.Auth) (*jwtmiddleware.JWTMiddleware, error) {
+func (rest *R) AuthMiddlewareSetup(a *auth.Auth) (*jwtmiddleware.JWTMiddleware, error) {
 	issuerURL, err := url.Parse("https://" + a.Domain + "/")
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse the issuer url: %v", err)
@@ -142,7 +144,7 @@ func (r *R) AuthMiddlewareSetup(a *auth.Auth) (*jwtmiddleware.JWTMiddleware, err
 
 	errorHandler := func(w http.ResponseWriter, rq *http.Request, err error) {
 		err = errors.E(err, errors.Unauthorized, "invalid token")
-		respond.JSONError(w, r.logger.Desugar(), err)
+		rest.JSONError(w, err)
 	}
 
 	middleware := jwtmiddleware.New(

@@ -5,22 +5,20 @@ import (
 	"net/http"
 	"time"
 
-	"go.uber.org/zap"
+	"github.com/rs/zerolog/log"
 )
 
 type Static struct {
 	srv *http.Server
-
-	logger *zap.SugaredLogger
 }
 
 func (s *Static) Start() {
 	s.srv.Handler = http.FileServer(http.Dir("./static"))
-	s.logger.Infow("Starting static service", "addr", s.srv.Addr)
+	log.Info().Msgf("Starting static service: %s", s.srv.Addr)
 
 	if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
-		s.logger.Fatalf("healthcheck server error: %v", err)
+		log.Fatal().Msgf("healthcheck server error: %v", err)
 	}
 }
 
@@ -29,6 +27,6 @@ func (s *Static) Stop() {
 	defer cancel()
 	if err := s.srv.Shutdown(ctx); err != nil {
 		// Error from closing listeners, or context timeout:
-		s.logger.Errorf("healthcheck server shutdown error: %v", err)
+		log.Error().Err(err).Msgf("healthcheck server shutdown error")
 	}
 }

@@ -8,18 +8,18 @@ import (
 
 	auth "github.com/iconimpact/replaceme/internal/auth0"
 	"github.com/iconimpact/replaceme/internal/sqldb"
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func NewTestREST(t *testing.T) REST {
 	r := R{
-		logger: zap.NewNop().Sugar(),
+		logger: zerolog.Nop(),
 		DB:     sqldb.NewTestDB(t),
 	}
 
 	var err error
-	r.AuthMiddleware, err = r.AuthMiddlewareSetup(auth.New("https://some-domain/", []string{"some-audience"}, zap.NewNop().Sugar()))
+	r.AuthMiddleware, err = r.AuthMiddlewareSetup(auth.New("https://some-domain/", []string{"some-audience"}))
 	assert.NoError(t, err)
 
 	return &r
@@ -27,15 +27,15 @@ func NewTestREST(t *testing.T) REST {
 
 func TestREST_New(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
-		claims := auth.New("http://some-domain", []string{""}, zap.NewNop().Sugar())
-		h, err := New(sqldb.NewTestDB(nil), nil, nil, claims, "9000", zap.NewNop().Sugar())
+		claims := auth.New("http://some-domain", []string{""})
+		h, err := New(sqldb.NewTestDB(nil), nil, nil, claims, "9000")
 		assert.NoError(t, err)
 		assert.NotNil(t, h)
 	})
 
 	t.Run("test auth init error", func(t *testing.T) {
-		claims := auth.New("\\", []string{""}, zap.NewNop().Sugar())
-		h, err := New(sqldb.NewTestDB(nil), nil, nil, claims, "9000", zap.NewNop().Sugar())
+		claims := auth.New("\\", []string{""})
+		h, err := New(sqldb.NewTestDB(nil), nil, nil, claims, "9000")
 		assert.Error(t, err)
 		assert.Nil(t, h)
 	})

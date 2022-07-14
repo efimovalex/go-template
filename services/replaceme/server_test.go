@@ -11,14 +11,12 @@ import (
 
 	"github.com/iconimpact/replaceme/config"
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap"
 )
 
 func TestNew(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
-	logger := zap.NewNop()
 	tests := []struct {
 		name    string
 		config  *config.Config
@@ -59,7 +57,7 @@ func TestNew(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			server, err := New(tt.config, logger.Sugar())
+			server, err := New(tt.config)
 			if tt.wantErr != nil {
 				assert.Error(t, err)
 				assert.Contains(t, err.Error(), tt.wantErr.Error())
@@ -68,7 +66,6 @@ func TestNew(t *testing.T) {
 				assert.NotNil(t, server.DB)
 				assert.NotNil(t, server.REST)
 				assert.Equal(t, server.cfg, tt.config)
-				assert.Equal(t, server.logger, logger.Sugar())
 			}
 		})
 	}
@@ -104,7 +101,6 @@ func TestServer_Start(t *testing.T) {
 
 			s := &Server{
 				sigChan:     make(chan os.Signal, 1),
-				logger:      zap.NewNop().Sugar(),
 				HealthCheck: h,
 				REST:        r,
 			}

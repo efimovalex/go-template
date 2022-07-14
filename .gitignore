@@ -62,8 +62,9 @@ libs/general/config/config_script.toml
 .coverage
 
 # test binaries
-.coverage
 .build
+slc
+!slc/
 
 # .env
 .env
@@ -75,4 +76,5 @@ tmp/
 .air.conf
 salonlab-main
 ~$*.xlsx
+~$*.xlsm
 build/

@@ -4,28 +4,29 @@ import (
 
 	// sql driver
 	"fmt"
+	"reflect"
+	"regexp"
 	"testing"
 
 	_ "github.com/lib/pq"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/assert"
 
-	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
-	"go.uber.org/zap"
 )
 
 // Client - database client
 type Client struct {
 	*sqlx.DB
-	psql   func() sq.StatementBuilderType
-	logger *zap.SugaredLogger
+	logger zerolog.Logger
 }
 
 // New - Creates a new Client from a sql.DB
-func New(host, port, user, password, database, ssl string, logger *zap.SugaredLogger) (*Client, error) {
+func New(host, port, user, password, database, ssl string) (*Client, error) {
 	var err error
 	c := new(Client)
-	c.logger = logger
+	c.logger = log.With().Str("component", "database").Logger()
 
 	conn := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=%s", host, port, user, password, ssl)
 
@@ -35,17 +36,16 @@ func New(host, port, user, password, database, ssl string, logger *zap.SugaredLo
 
 	c.DB, err = sqlx.Connect("postgres", conn)
 	if err != nil {
-		c.logger.Errorw("Unable to connect to database", "error", err)
+		c.logger.Error().Err(err).Msg("Unable to connect to database")
 		return nil, err
 	}
 
 	err = c.Ping()
 	if err != nil {
-		c.logger.Errorw("Unable to ping database", "error", err)
+		c.logger.Error().Err(err).Msg("Unable to ping database")
 		return nil, err
 	}
-	c.psql = initPSQL
-	c.logger.Infof("Connected to %s:%s", host, port)
+	c.logger.Info().Msgf("Connected to %s:%s", host, port)
 	return c, nil
 }
 
@@ -53,24 +53,49 @@ func (c *Client) Ping() error {
 	return c.DB.Ping()
 }
 
-func initPSQL() sq.StatementBuilderType {
-	return sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
-}
-
 func NewTestDB(t *testing.T) *Client {
 	if t == nil {
 		return nil
 	}
-	db, err := New("localhost", "5432", "replaceme", "replaceme", "replaceme_test", "disable", zap.NewNop().Sugar())
+	db, err := New("localhost", "5433", "replaceme", "replaceme", "replaceme_test", "disable")
 	assert.NoError(t, err)
 	return db
 }
 
-// USE ONLY FOR TESTING
-func (db *Client) resetTable(table string) error {
+// ResetTable - USE ONLY FOR TESTING to reset tables
+func (db *Client) ResetTable(t *testing.T, table string) {
 	_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
-	if err != nil {
-		return err
+	assert.NoError(t, err)
+}
+
+func (db *Client) logQuery(query string,
+	args ...interface{}) {
+	query = regexp.MustCompile(`\s+`).ReplaceAllString(query, " ")
+	q := regexp.MustCompile(`\$\d`).ReplaceAllString(query, "%v")
+	a := []interface{}{}
+	for _, i := range args {
+		rv := reflect.ValueOf(i)
+		if rv.Kind() == reflect.Ptr {
+			rv = rv.Elem()
+		}
+
+		if rv.Kind() == reflect.Bool {
+			if rv.Bool() {
+				a = append(a, 1)
+			} else {
+				a = append(a, 0)
+			}
+			continue
+		}
+
+		if rv.Kind() == reflect.String {
+			a = append(a, fmt.Sprintf(`'%s'`, rv))
+			continue
+		}
+
+		a = append(a, rv)
+
 	}
-	return nil
+
+	db.logger.Debug().Msgf(q, a...)
 }

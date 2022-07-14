@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -12,8 +13,8 @@ import (
 	auth "github.com/iconimpact/replaceme/internal/auth0"
 	"github.com/iconimpact/replaceme/internal/mongodb"
 	"github.com/iconimpact/replaceme/internal/redisdb"
-	"github.com/iconimpact/replaceme/internal/sqldb"
-	"go.uber.org/zap"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 type REST interface {
@@ -21,25 +22,29 @@ type REST interface {
 	Stop()
 }
 
+type DB interface {
+	Ping() error
+}
+
 type R struct {
 	Router *chi.Mux
 	srv    *http.Server
 
-	DB    *sqldb.Client
+	DB    DB
 	Mongo *mongodb.Client
 	Redis *redisdb.Client
 
 	AuthMiddleware *jwtmiddleware.JWTMiddleware
 
-	logger *zap.SugaredLogger
+	logger zerolog.Logger
 }
 
-func New(DB *sqldb.Client, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, port string, logger *zap.SugaredLogger) (REST, error) {
+func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, port string) (REST, error) {
 	rest := &R{
 		DB:     DB,
 		Mongo:  Mongo,
 		Redis:  redis,
-		logger: logger,
+		logger: log.With().Str("component", "rest").Logger(),
 	}
 	var err error
 	rest.AuthMiddleware, err = rest.AuthMiddlewareSetup(a)
@@ -69,11 +74,11 @@ func New(DB *sqldb.Client, Mongo *mongodb.Client, redis *redisdb.Client, a *auth
 }
 
 func (rest *R) Start() {
-	rest.logger.Infow("Starting REST service", "addr", rest.srv.Addr)
+	rest.logger.Info().Msgf("Starting REST service %s", rest.srv.Addr)
 
 	if err := rest.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
-		rest.logger.Fatalf("healthcheck server error: %v", err)
+		rest.logger.Fatal().Msgf("healthcheck server error: %v", err)
 	}
 }
 
@@ -82,6 +87,54 @@ func (rest *R) Stop() {
 	defer cancel()
 	if err := rest.srv.Shutdown(ctx); err != nil {
 		// Error from closing listeners, or context timeout:
-		rest.logger.Errorf("healthcheck server shutdown error: %v", err)
+		rest.logger.Error().Err(err).Msg("healthcheck server shutdown error")
 	}
+}
+
+// JSON serializes the given struct as JSON into the response body.
+// It also sets the Content-Type as "application/json" and
+// X-Content-Type-Options as "nosniff".
+// Logs the status and v if l is not nil.
+func (rest *R) JSON(w http.ResponseWriter, status int, v interface{}) {
+	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		rest.logger.Error().Err(err).Msg("error json encoding response")
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.WriteHeader(status)
+
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		rest.logger.Error().Err(err).Msg("error writing response")
+	}
+}
+
+type errorResponse struct {
+	Message string `json:"message"`
+}
+
+// JSONError returns an HTTP response as JSON message with status code
+// base on app err Kind, Msg from app err HTTPMessage.
+// Logs the error if l is not nil.
+func (rest *R) JSONError(w http.ResponseWriter, err error) {
+	var errRsp interface{}
+	var status int
+	var errMsg string
+
+	// set custom app err Message
+	appErr, ok := err.(*errors.Error)
+	if !ok {
+		status = http.StatusInternalServerError
+		errMsg = "Internal Server Error"
+	} else {
+		status = errors.ToHTTPStatus(appErr)
+		errMsg = errors.ToHTTPResponse(appErr)
+	}
+	errRsp = errorResponse{Message: errMsg}
+
+	rest.JSON(w, status, errRsp)
 }

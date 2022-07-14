@@ -1,11 +1,12 @@
 package sqldb
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/iconimpact/go-core/errors"
 	"github.com/iconimpact/go-core/structs"
 	"golang.org/x/crypto/bcrypt"
 
@@ -25,62 +26,69 @@ type User struct {
 }
 
 // UserByEmail loads User with given email, returns nil if not found
-func (db *Client) FindOneUserByEmail(email string) (*User, error) {
+func (db *Client) FindOneUserByEmail(ctx context.Context, email string) (*User, error) {
 	u := User{}
-	err := db.psql().Select("*").
-		From("users").Where(sq.Eq{"email": email}).Limit(1).
-		RunWith(db).QueryRow().
-		Scan(&u.ID, &u.Password, &u.Email, &u.Description, &u.FirstName, &u.LastName, &u.CreatedAt, &u.UpdatedAt)
+	stmt, args, err := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Select("*").
+		From("users").Where(sq.Eq{"email": email}).Limit(1).ToSql()
+	if err != nil {
+		return nil, err
+	}
+
+	db.logQuery(stmt, args...)
+
+	err = db.GetContext(ctx, &u, stmt, args...)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		return nil, errors.E(err, errors.Internal)
+		return nil, err
 	}
 	return &u, nil
 }
 
 // Insert sanitizes and inserts a User in database
-func (db *Client) InsertUser(u *User) error {
+func (db *Client) InsertUser(ctx context.Context, u *User) error {
 	// removes all leading and trailing white spaces from string fields
 	err := u.Sanitize()
 	if err != nil {
-		return errors.E(err)
+		return err
 	}
 
 	if u.Password == "" {
-		msg := "password is required"
-		return errors.E(fmt.Errorf(msg), errors.BadRequest, msg)
+		return errors.New("password is required")
 	}
+
 	// hash password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.E(err, errors.Internal)
+		return err
 	}
 	u.Password = string(hashedPassword)
 
 	// is the email already in the database? it must be unique
-	user, err := db.FindOneUserByEmail(u.Email)
+	user, err := db.FindOneUserByEmail(ctx, u.Email)
 	if err != nil {
-		return errors.E(err, errors.Internal, "error finding user")
+		return err
 	}
+
 	if user != nil {
-		msg := fmt.Sprintf("user with email %v does already exist", u.Email)
-		return errors.E(fmt.Errorf(msg), errors.Conflict, msg)
+		return fmt.Errorf("user with email %v does already exist", u.Email)
 	}
 
 	// insert to database
-	var createdUser User
-	err = db.psql().Insert("users").
+	stmt, args, err := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Insert("users").
 		Columns("email", "password", "description", "first_name", "last_name").
-		Values(u.Email, u.Password, u.Description, u.FirstName, u.LastName).Suffix(" RETURNING * ").
-		RunWith(db).QueryRow().
-		Scan(&createdUser.ID, &createdUser.Password, &createdUser.Email, &createdUser.Description, &createdUser.FirstName, &createdUser.LastName, &createdUser.CreatedAt, &createdUser.UpdatedAt)
+		Values(u.Email, u.Password, u.Description, u.FirstName, u.LastName).Suffix(" RETURNING * ").ToSql()
 	if err != nil {
-		return errors.E(err, errors.Internal, "error finding user")
+		return err
+	}
+	db.logQuery(stmt, args...)
+
+	err = db.GetContext(ctx, u, stmt, args...)
+	if err != nil {
+		return err
 	}
 
-	*u = createdUser
 	return nil
 }
 
@@ -88,7 +96,7 @@ func (db *Client) InsertUser(u *User) error {
 func (u *User) Sanitize() error {
 	err := structs.Sanitize(u)
 	if err != nil {
-		return errors.E(err, errors.Internal)
+		return err
 	}
 
 	return nil

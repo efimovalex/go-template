@@ -11,6 +11,7 @@ import (
 
 // Config used globally
 type Config struct {
+	Logger      Logger      `env:",prefix=LOG_"`
 	REST        REST        `env:",prefix=REST_"`
 	Static      Static      `env:",prefix=STATIC_"`
 	HealthCheck HealthCheck `env:",prefix=HC_"`
@@ -22,6 +23,11 @@ type Config struct {
 	Auth Auth `env:",prefix=AUTH_"`
 
 	Logging Logging
+}
+
+type Logger struct {
+	Level  string `env:"LEVEL,default=info"`
+	Pretty bool   `env:"PRETTY,default=false"`
 }
 
 // REST configuration
@@ -51,7 +57,7 @@ type Postgres struct {
 	Name     string `env:"NAME,default=replaceme"`
 	User     string `env:"USER,default=replaceme"`
 	Password string `env:"PASSWORD,default=replaceme"`
-	Port     string `env:"PORT,default=5432"`
+	Port     string `env:"PORT,default=5433"`
 	SSLMode  string `env:"SSL_MODE,default=disable"`
 }
 
