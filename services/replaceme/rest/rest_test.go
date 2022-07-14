@@ -7,15 +7,16 @@ import (
 	"testing"
 
 	auth "github.com/efimovalex/replaceme/internal/auth0"
-	"github.com/efimovalex/replaceme/internal/sqldb"
+	"github.com/efimovalex/replaceme/internal/postgres"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
 func NewTestREST(t *testing.T) REST {
 	r := R{
-		logger: zerolog.Nop(),
-		DB:     sqldb.NewTestDB(t),
+		logger:         zerolog.Nop(),
+		DB:             postgres.NewTestDB(t),
+		prettyResponse: true,
 	}
 
 	var err error
@@ -28,14 +29,14 @@ func NewTestREST(t *testing.T) REST {
 func TestREST_New(t *testing.T) {
 	t.Run("test success", func(t *testing.T) {
 		claims := auth.New("http://some-domain", []string{""})
-		h, err := New(sqldb.NewTestDB(nil), nil, nil, claims, "9000")
+		h, err := New(postgres.NewTestDB(nil), nil, nil, claims, true, "9000")
 		assert.NoError(t, err)
 		assert.NotNil(t, h)
 	})
 
 	t.Run("test auth init error", func(t *testing.T) {
 		claims := auth.New("\\", []string{""})
-		h, err := New(sqldb.NewTestDB(nil), nil, nil, claims, "9000")
+		h, err := New(postgres.NewTestDB(nil), nil, nil, claims, true, "9000")
 		assert.Error(t, err)
 		assert.Nil(t, h)
 	})

@@ -23,6 +23,8 @@ type Client struct {
 	DB *mongo.Database
 	*mongo.Client
 	logger zerolog.Logger
+
+	Users *mongo.Collection
 }
 
 // New - Creates a new Client from a sql.DB
@@ -43,8 +45,10 @@ func New(address, port, username, password, database string, ssl bool) (*Client,
 	}
 
 	c.DB = c.Client.Database(database)
+	c.Users = c.DB.Collection(userCollection)
 
 	c.logger.Info().Msgf("Connected to %s:%s", address, port)
+
 	return c, nil
 }
 
@@ -56,7 +60,12 @@ func NewTestDB(t *testing.T) *Client {
 	if t == nil {
 		return nil
 	}
-	db, err := New("localhost", "27017", "root", "root", "mongo_db", false)
+	db, err := New("localhost", "27017", "replaceme", "replaceme", "replaceme_test", false)
 	assert.NoError(t, err)
 	return db
+}
+
+func (c *Client) ResetCollection(t *testing.T, collection *mongo.Collection) {
+	err := collection.Drop(context.Background())
+	assert.NoError(t, err)
 }

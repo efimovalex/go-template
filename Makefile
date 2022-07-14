@@ -10,6 +10,7 @@ GOCACHE=$(shell pwd)/.build
 COVERAGE_DIR?=.coverage
 LOG_LEVEL?=debug
 LOG_PRETTY?=true
+REST_PRETTY?=true
 
 
 help: ## This help.
@@ -64,14 +65,14 @@ lint: ## Runs the linter
 	golangci-lint run ./...
 
 build: ## Builds go binary
-	go build -o ./build/$(BINARY_NAME) cmd/replaceme/main.go
+	go build -o ./build/$(BINARY_NAME) main.go
 
-run: ## Runs main package
-	go run cmd/replaceme/main.go;
+run: docs ## Runs main package
+	go run main.go;
 
-doc swag: ## Generate swagger documentation json/yaml
+docs swag: ## Generate swagger documentation json/yaml
 	@swag --version
-	@swag init -p camelcase -g ../cmd/replaceme/main.go -o docs/swagger -d ./config,./cmd,./services/,./internal --md docs
+	@swag init -p camelcase -g ../main.go -o docs/swagger -d ./config,./services/,./internal --md docs
 
 up: ## Starts docker containers for dependent services
 	@docker-compose up -d --build --remove-orphans

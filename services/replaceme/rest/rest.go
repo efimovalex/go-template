@@ -35,15 +35,17 @@ type R struct {
 
 	AuthMiddleware *jwtmiddleware.JWTMiddleware
 
-	logger zerolog.Logger
+	logger         zerolog.Logger
+	prettyResponse bool
 }
 
-func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, port string) (REST, error) {
+func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, prettyResponse bool, port string) (REST, error) {
 	rest := &R{
-		DB:     DB,
-		Mongo:  Mongo,
-		Redis:  redis,
-		logger: log.With().Str("component", "rest").Logger(),
+		DB:             DB,
+		Mongo:          Mongo,
+		Redis:          redis,
+		logger:         log.With().Str("component", "rest").Logger(),
+		prettyResponse: prettyResponse,
 	}
 	var err error
 	rest.AuthMiddleware, err = rest.AuthMiddlewareSetup(a)
@@ -95,7 +97,13 @@ func (rest *R) Stop() {
 // X-Content-Type-Options as "nosniff".
 // Logs the status and v if l is not nil.
 func (rest *R) JSON(w http.ResponseWriter, status int, v interface{}) {
-	jsonBytes, err := json.Marshal(v)
+	var jsonBytes []byte
+	var err error
+	if rest.prettyResponse {
+		jsonBytes, err = json.MarshalIndent(v, "", "\t")
+	} else {
+		jsonBytes, err = json.Marshal(v)
+	}
 	if err != nil {
 		rest.logger.Error().Err(err).Msg("error json encoding response")
 

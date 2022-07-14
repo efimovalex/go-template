@@ -9,8 +9,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/efimovalex/replaceme/internal/mongodb"
+	"github.com/efimovalex/replaceme/internal/postgres"
 	"github.com/efimovalex/replaceme/internal/redisdb"
-	"github.com/efimovalex/replaceme/internal/sqldb"
 	"github.com/go-redis/redismock/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ import (
 )
 
 func TestHealth_Check(t *testing.T) {
-	db := sqldb.NewTestDB(t)
+	db := postgres.NewTestDB(t)
 
 	mdb := mongodb.NewTestDB(t)
 
@@ -38,7 +38,7 @@ func TestHealth_Check(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		DB             *sqldb.Client
+		DB             *postgres.Client
 		Mongo          *mongodb.Client
 		Redis          *redisdb.Client
 		expectedBody   string
@@ -54,7 +54,7 @@ func TestHealth_Check(t *testing.T) {
 		},
 		{
 			name:           "Test health check failure",
-			DB:             &sqldb.Client{DB: sqlxMock},
+			DB:             &postgres.Client{DB: sqlxMock},
 			Mongo:          &mongodb.Client{Client: &mongo.Client{}},
 			Redis:          &redisdb.Client{DB: redisClientMock},
 			expectedBody:   `{"message":"healthcheck failed","errors":["Unable to ping postgres","Unable to ping mongo","Unable to ping redis"]}`,
@@ -77,7 +77,7 @@ func TestHealth_Check(t *testing.T) {
 }
 
 func TestHealth_Stop(t *testing.T) {
-	db := sqldb.NewTestDB(t)
+	db := postgres.NewTestDB(t)
 	mdb := mongodb.NewTestDB(t)
 	rdb := redisdb.NewTestDB(t)
 

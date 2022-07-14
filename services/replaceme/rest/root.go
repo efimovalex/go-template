@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"fmt"
 	"net/http"
 )
 
@@ -22,5 +23,10 @@ type Message struct {
 // @Failure 500 {object} Message "Internal server error"
 // @Router / [get]
 func (rest *R) GetRoot(resp http.ResponseWriter, r *http.Request) {
-	rest.JSON(resp, http.StatusOK, Message{"Hello, world!"})
+	name := r.URL.Query().Get("name")
+	if name == "" {
+		name = "World"
+	}
+
+	rest.JSON(resp, http.StatusOK, Message{fmt.Sprintf("Hello, %s!", name)})
 }

@@ -1,4 +1,4 @@
-package sqldb
+package postgres
 
 import (
 
@@ -26,7 +26,7 @@ type Client struct {
 func New(host, port, user, password, database, ssl string) (*Client, error) {
 	var err error
 	c := new(Client)
-	c.logger = log.With().Str("component", "database").Logger()
+	c.logger = log.With().Str("component", "postgres").Logger()
 
 	conn := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=%s", host, port, user, password, ssl)
 

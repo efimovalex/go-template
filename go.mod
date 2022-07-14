@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/Masterminds/squirrel v1.5.3
+	github.com/andreyvit/diff v0.0.0-20170406064948-c7f18ee00883
 	github.com/auth0/go-jwt-middleware/v2 v2.0.1
 	github.com/go-chi/chi v1.5.4
 	github.com/go-redis/redis/v8 v8.11.5
@@ -42,6 +43,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.8.0 // indirect
+	github.com/sergi/go-diff v1.2.0 // indirect
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.0.2 // indirect

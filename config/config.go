@@ -39,7 +39,8 @@ type Logger struct {
 
 // REST configuration
 type REST struct {
-	Port string `env:"PORT,default=8080"`
+	Port   string `env:"PORT,default=8080"`
+	Pretty bool   `env:"PRETTY,default=false"`
 }
 
 // HealthCheck configuration

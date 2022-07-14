@@ -13,12 +13,20 @@ func TestREST_GetRoot(t *testing.T) {
 	tests := []struct {
 		name               string
 		body               string
+		qname              string
 		expectedStatusCode int
 		expectedBody       string
 	}{
 		{
-			name:               "TestREST_GetRoot-Success",
+			name:               "Success default name",
 			body:               "",
+			expectedStatusCode: http.StatusOK,
+			expectedBody:       `{"message":"Hello, world!"}`,
+		},
+		{
+			name:               "Success other name",
+			body:               "",
+			qname:              "Alex",
 			expectedStatusCode: http.StatusOK,
 			expectedBody:       `{"message":"Hello, world!"}`,
 		},
@@ -31,10 +39,17 @@ func TestREST_GetRoot(t *testing.T) {
 			req, err := http.NewRequest("GET", "/", strings.NewReader(tt.body))
 			assert.NoError(t, err)
 			w := httptest.NewRecorder()
+
+			if tt.qname != "" {
+				setQueryParams(req, map[string][]string{"name": {tt.qname}})
+			}
+
+			setURLParams(req, map[string]string{"name": "replaceme"})
+
 			r.GetRoot(w, req)
 
 			assert.Equal(t, tt.expectedStatusCode, w.Code)
-			assert.Equal(t, tt.expectedBody, w.Body.String())
+			checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 		})
 	}
 }

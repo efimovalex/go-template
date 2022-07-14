@@ -51,7 +51,7 @@ func New(port string) *S {
 }
 
 func (h *S) Start() {
-	h.logger.Info().Msgf("starting swagger service %s", h.srv.Addr)
+	h.logger.Info().Msgf("Starting swagger service %s", h.srv.Addr)
 	if err := h.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		h.logger.Fatal().Msgf("Swagger server error: %v", err)

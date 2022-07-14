@@ -1,4 +1,4 @@
-package sqldb
+package mongodb
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 func TestClient_FindOneUserByEmail(t *testing.T) {
 	db := NewTestDB(t)
 	defer func() {
-		db.ResetTable(t, "users")
+		db.ResetCollection(t, db.Users)
 	}()
 	u := User{
 		Email:       "test@test.com",
@@ -68,7 +68,7 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 func TestClient_InsertUser(t *testing.T) {
 	db := NewTestDB(t)
 	defer func() {
-		db.ResetTable(t, "users")
+		db.ResetCollection(t, db.Users)
 	}()
 	u := User{
 		Email:       "test@test.com",
@@ -91,6 +91,11 @@ func TestClient_InsertUser(t *testing.T) {
 			name:    "Test reinsert user",
 			user:    &u,
 			wantErr: errors.New("user with email test@test.com does already exist"),
+		},
+		{
+			name:    "Test insert nil user",
+			user:    nil,
+			wantErr: errors.New("user is nil"),
 		},
 		{
 			name: "Test missing password",

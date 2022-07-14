@@ -44,7 +44,7 @@ func TestREST_LogRequestMiddleware(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, w.Code)
 
-			assert.Equal(t, `{"message":"Hello, world!"}`, w.Body.String())
+			checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 		})
 	}
 }
@@ -75,7 +75,7 @@ func Test_addTimeContextMiddleware(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, w.Code)
 
-			assert.Equal(t, `{"message":"Hello, world!"}`, w.Body.String())
+			checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 		})
 	}
 }
@@ -134,13 +134,11 @@ func TestUserCtx(t *testing.T) {
 
 	t.Run("invalid auth claims", func(t *testing.T) {
 		// invalid auth claims
-		respRecorder := httptest.NewRecorder()
-		r.UserCtx(handlerFunc).ServeHTTP(respRecorder, req)
-		respBody := respRecorder.Body.String()
-		assert.Equal(
-			t, http.StatusUnauthorized, respRecorder.Code, "body:\n%s", respBody)
-		assert.Equal(t, `{"message":"no auth claims found in context"}`, respBody)
+		w := httptest.NewRecorder()
+		r.UserCtx(handlerFunc).ServeHTTP(w, req)
+		assert.Equal(t, http.StatusUnauthorized, w.Code, "body:\n%s", w.Body.String())
 
+		checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 	})
 
 	t.Run("valid auth claims", func(t *testing.T) {
@@ -155,10 +153,10 @@ func TestUserCtx(t *testing.T) {
 
 		ctx := context.WithValue(req.Context(), jwtmiddleware.ContextKey{}, claimsWithWriteAll)
 		req = req.WithContext(ctx)
-		respRecorder := httptest.NewRecorder()
-		r.UserCtx(handlerFunc).ServeHTTP(respRecorder, req)
-		respBody := respRecorder.Body.String()
-		assert.Equal(t, http.StatusOK, respRecorder.Code, "body:\n%s", respBody)
+		w := httptest.NewRecorder()
+		r.UserCtx(handlerFunc).ServeHTTP(w, req)
+		assert.Equal(t, http.StatusOK, w.Code, "body:\n%s", w.Body.String())
+		checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 	})
 }
 
@@ -175,7 +173,8 @@ func TestR_AuthMiddlewareSetup(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := &R{
-				logger: zerolog.Nop(),
+				logger:         zerolog.Nop(),
+				prettyResponse: true,
 			}
 			got, err := r.AuthMiddlewareSetup(auth.New("http://some-domain", []string{"some-audience"}))
 			if (err != nil) != tt.wantErr {
@@ -200,13 +199,12 @@ func TestR_AuthMiddlewareSetup(t *testing.T) {
 			req := httptest.NewRequest("GET", "http://some-test-url", nil)
 			ctx := context.WithValue(req.Context(), jwtmiddleware.ContextKey{}, claimsWithWriteAll)
 			req = req.WithContext(ctx)
-			respRecorder := httptest.NewRecorder()
+			w := httptest.NewRecorder()
 
-			got.CheckJWT(handlerFunc).ServeHTTP(respRecorder, req)
+			got.CheckJWT(handlerFunc).ServeHTTP(w, req)
+			assert.Equal(t, http.StatusUnauthorized, w.Code, "body:\n%s", w.Body.String())
 
-			respBody := respRecorder.Body.String()
-
-			assert.Equal(t, http.StatusUnauthorized, respRecorder.Code, "body:\n%s", respBody)
+			checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 		})
 	}
 }

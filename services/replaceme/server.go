@@ -8,8 +8,8 @@ import (
 	"github.com/efimovalex/replaceme/config"
 	auth "github.com/efimovalex/replaceme/internal/auth0"
 	"github.com/efimovalex/replaceme/internal/mongodb"
+	"github.com/efimovalex/replaceme/internal/postgres"
 	"github.com/efimovalex/replaceme/internal/redisdb"
-	"github.com/efimovalex/replaceme/internal/sqldb"
 	"github.com/efimovalex/replaceme/services/replaceme/healthcheck"
 	"github.com/efimovalex/replaceme/services/replaceme/rest"
 	"github.com/efimovalex/replaceme/services/replaceme/swagger"
@@ -24,7 +24,7 @@ type Service interface {
 type Server struct {
 	cfg *config.Config
 
-	DB *sqldb.Client
+	DB *postgres.Client
 
 	REST        Service
 	HealthCheck Service
@@ -37,7 +37,7 @@ type Server struct {
 }
 
 func New(cfg *config.Config) (*Server, error) {
-	db, err := sqldb.New(cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Name, cfg.Postgres.SSLMode)
+	db, err := postgres.New(cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Name, cfg.Postgres.SSLMode)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +52,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 	claims := auth.New(cfg.Auth.Domain, []string{cfg.Auth.Audience})
-	rest, err := rest.New(db, mongodb, redis, claims, cfg.REST.Port)
+	rest, err := rest.New(db, mongodb, redis, claims, cfg.REST.Pretty, cfg.REST.Port)
 	if err != nil {
 		return nil, err
 	}
@@ -83,10 +83,6 @@ func (s *Server) Start() {
 func (s *Server) checkSignal() {
 	// trap signals
 	signal.Notify(s.sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
-	// logging
-	s.logger.Info().Msg("Entering run loop")
-	// run until signal or error
 
 	for sig := range s.sigChan {
 		// log signal
