@@ -5,12 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	_ "github.com/efimovalex/replaceme/docs/swagger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	swaggerFiles "github.com/swaggo/files"
-	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 type Swagger interface {
@@ -45,22 +43,15 @@ func New(port string) *S {
 		logger: log.With().Str("component", "Swagger").Logger(),
 	}
 
-	r := gin.Default()
-	// programmatically set swagger info
-	docs.SwaggerInfo.Title = "replaceme API"
-	docs.SwaggerInfo.Description = "This is a replaceme API server."
-	docs.SwaggerInfo.Version = "1.0"
-	docs.SwaggerInfo.BasePath = "/v2"
-	docs.SwaggerInfo.Schemes = []string{"http"}
-
-	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-	h.srv.Handler = r
+	h.srv.Handler = httpSwagger.Handler(
+		httpSwagger.URL(":" + port + "/swagger/doc.json"), //The url pointing to API definition
+	)
 
 	return h
 }
 
 func (h *S) Start() {
-	h.logger.Info().Msgf("starting ealthcheck service %s", h.srv.Addr)
+	h.logger.Info().Msgf("starting swagger service %s", h.srv.Addr)
 	if err := h.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		h.logger.Fatal().Msgf("Swagger server error: %v", err)

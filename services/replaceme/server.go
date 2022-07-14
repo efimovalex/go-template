@@ -12,6 +12,7 @@ import (
 	"github.com/efimovalex/replaceme/internal/sqldb"
 	"github.com/efimovalex/replaceme/services/replaceme/healthcheck"
 	"github.com/efimovalex/replaceme/services/replaceme/rest"
+	"github.com/efimovalex/replaceme/services/replaceme/swagger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -68,10 +69,15 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Start() {
+	if s.cfg.Swagger.Enable {
+		swagger := swagger.New(s.cfg.Swagger.Port)
+		defer swagger.Stop()
+		go swagger.Start()
+	}
 	// start health check server
 	go s.HealthCheck.Start()
 	go s.REST.Start()
-	go s.checkSignal()
+	s.checkSignal()
 }
 
 func (s *Server) checkSignal() {

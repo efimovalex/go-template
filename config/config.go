@@ -22,13 +22,14 @@ type Config struct {
 
 	Auth Auth `env:",prefix=AUTH_"`
 
-	SwaggerUI SwaggerUI `env:",prefix=SWAGGER_"`
+	Swagger Swagger `env:",prefix=SWAGGER_"`
 
 	Logging Logging
 }
 
-type SwaggerUI struct {
-	Port string `env:"PORT,default=8085"`
+type Swagger struct {
+	Enable bool   `env:"ENABLE,default=true"`
+	Port   string `env:"PORT,default=8085"`
 }
 
 type Logger struct {

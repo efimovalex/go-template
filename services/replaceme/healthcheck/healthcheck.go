@@ -51,7 +51,7 @@ func New(DB Ping, Mongo Ping, Redis Ping, port string) *Health {
 }
 
 func (h *Health) Start() {
-	h.logger.Info().Msgf("starting ealthcheck service %s", h.srv.Addr)
+	h.logger.Info().Msgf("starting healthcheck service %s", h.srv.Addr)
 	if err := h.srv.ListenAndServe(); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		h.logger.Fatal().Msgf("healthcheck server error: %v", err)
