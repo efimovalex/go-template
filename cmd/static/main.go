@@ -7,8 +7,8 @@ import (
 
 	"github.com/iconimpact/replaceme/config"
 	"github.com/iconimpact/replaceme/services/static"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -28,23 +28,18 @@ func main() {
 func run(args []string, stdout io.Writer) error {
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Printf("config load error %s", err.Error())
-		return err
-	}
-
-	log, err := loadLogger(cfg)
-	if err != nil {
-		fmt.Printf("failed to init logger: %s", err.Error())
+		log.Error().Err(err).Msg("config load error")
 
 		return err
 	}
-	defer func() { _ = log.Sync() }()
 
-	log.Infow("config loaded", "config", cfg)
+	if cfg.Logger.Pretty {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	}
 
-	static, err := static.New(cfg, log)
+	static, err := static.New(cfg)
 	if err != nil {
-		log.Errorf("failed init static service: %s", err.Error())
+		log.Error().Err(err).Msgf("failed init static service")
 
 		return err
 	}
@@ -52,24 +47,4 @@ func run(args []string, stdout io.Writer) error {
 	static.Start()
 
 	return nil
-}
-
-func loadLogger(cfg *config.Config) (*zap.SugaredLogger, error) {
-	var err error
-	logConfig := zap.NewProductionConfig()
-	logConfig.Level, err = zap.ParseAtomicLevel(cfg.Logging.Level)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse log level: %s", err.Error())
-	}
-	logConfig.Development = cfg.Logging.Development
-	logConfig.EncoderConfig.MessageKey = "message"
-	logConfig.EncoderConfig.TimeKey = "timestamp"
-	logConfig.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-
-	logger, err := logConfig.Build()
-	if err != nil {
-		return nil, fmt.Errorf("failed to build logger: %s", err.Error())
-	}
-
-	return logger.Sugar(), nil
 }

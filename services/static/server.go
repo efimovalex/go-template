@@ -6,8 +6,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"go.uber.org/zap"
-
 	"github.com/iconimpact/replaceme/config"
 	"github.com/rs/zerolog/log"
 )
@@ -18,7 +16,7 @@ type Server struct {
 	Static *Static
 }
 
-func New(cfg *config.Config, logger *zap.SugaredLogger) (*Server, error) {
+func New(cfg *config.Config) (*Server, error) {
 	return &Server{
 		cfg: cfg,
 	}, nil
