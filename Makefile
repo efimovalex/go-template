@@ -69,7 +69,7 @@ build: ## Builds go binary
 run: ## Runs main package
 	go run cmd/replaceme/main.go;
 
-docs: ## Generate swagger documentation json/yaml
+doc swag: ## Generate swagger documentation json/yaml
 	@swag --version
 	@swag init -p camelcase -g ../cmd/replaceme/main.go -o docs/swagger -d ./config,./cmd,./services/,./internal --md docs
 
