@@ -23,16 +23,34 @@ The development setup depends on the following tools:
 - docker
 - docker-compose
 - golangci-lint
+- swaggo
+
+
 
 ### Operations
 
 Make provides a interface to common development operations
 
- - test        Runs the tests
- - build       Builds go binary
- - run         Runs main package
- - swag        Generate swagger documentation json/yaml
- - up          Starts docker containers for dependent services
- - down        Removes docker containers for dependent services
- - deps        Fetches go mod dependencies
- - clean       Removes all docker containers and volumes
+```
+$ make
+
+Usage:
+  make <target>
+
+Targets:
+  help        This help.
+  test-ci     Runs the tests with coverage checks + lint
+  test        Runs all tests normally
+  lint        Runs the linter
+  build       Builds go binary
+  run         Runs main package
+  docs        Generate swagger documentation json/yaml
+  up          Starts docker containers for dependent services
+  stop        Stops docker containers for dependent services
+  down        Removes docker containers for dependent services
+  deps        Fetches go dependencies
+  clean       Removes all docker containers and volumes
+  migration   Creates a new migration
+  migrate     Runs migrations locally
+  revert      Reverts migrations locally
+  ```

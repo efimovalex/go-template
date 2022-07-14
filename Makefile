@@ -82,9 +82,10 @@ stop: ## Stops docker containers for dependent services
 down: ## Removes docker containers for dependent services
 	@docker-compose down --remove-orphans
 
-deps: ## Fetches go mod dependencies
+deps: ## Fetches go dependencies
 	@go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin v1.46.2
+	@go install github.com/swaggo/swag/cmd/swag@latest
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $$(go env GOPATH)/bin
 	@go mod tidy
 	@go mod download
 
