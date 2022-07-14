@@ -1,4 +1,4 @@
-.PHONY: help
+.PHONY: help docs
 .DEFAULT_GOAL := help
 .EXPORT_ALL_VARIABLES:
 
@@ -69,9 +69,9 @@ build: ## Builds go binary
 run: ## Runs main package
 	go run cmd/replaceme/main.go;
 
-swag:  ## Generate swagger documentation json/yaml
+docs: ## Generate swagger documentation json/yaml
 	@swag --version
-	@swag init -p pascalcase -g ../cmd/replaceme/main.go -o docs/swagger -d ./services/,./internal,./pkg --md docs
+	@swag init -p camelcase -g ../cmd/replaceme/main.go -o docs/swagger -d ./config,./cmd,./services/,./internal --md docs
 
 up: ## Starts docker containers for dependent services
 	@docker-compose up -d --build --remove-orphans

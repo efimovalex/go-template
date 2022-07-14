@@ -32,7 +32,7 @@ type Health struct {
 
 type HealthCheckResponse struct {
 	Message string   `json:"message"`
-	Errors  []string `json:"errors"`
+	Errors  []string `json:"errors,omitempty"`
 }
 
 func New(DB Ping, Mongo Ping, Redis Ping, port string) *Health {

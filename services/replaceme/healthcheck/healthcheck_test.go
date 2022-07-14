@@ -57,7 +57,7 @@ func TestHealth_Check(t *testing.T) {
 			DB:             &sqldb.Client{DB: sqlxMock},
 			Mongo:          &mongodb.Client{Client: &mongo.Client{}},
 			Redis:          &redisdb.Client{DB: redisClientMock},
-			expectedBody:   `{"errors":["Unable to ping postgres","Unable to ping mongo","Unable to ping redis"]}`,
+			expectedBody:   `{"message":"healthcheck failed","errors":["Unable to ping postgres","Unable to ping mongo","Unable to ping redis"]}`,
 			expectedStatus: http.StatusInternalServerError,
 		},
 	}
