@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iconimpact/go-core/structs"
 	"golang.org/x/crypto/bcrypt"
 
 	sq "github.com/Masterminds/squirrel"
@@ -48,12 +47,6 @@ func (db *Client) FindOneUserByEmail(ctx context.Context, email string) (*User, 
 
 // Insert sanitizes and inserts a User in database
 func (db *Client) InsertUser(ctx context.Context, u *User) error {
-	// removes all leading and trailing white spaces from string fields
-	err := u.Sanitize()
-	if err != nil {
-		return err
-	}
-
 	if u.Password == "" {
 		return errors.New("password is required")
 	}
@@ -85,16 +78,6 @@ func (db *Client) InsertUser(ctx context.Context, u *User) error {
 	db.logQuery(stmt, args...)
 
 	err = db.GetContext(ctx, u, stmt, args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Sanitize removes all leading and trailing white spaces from string fields
-func (u *User) Sanitize() error {
-	err := structs.Sanitize(u)
 	if err != nil {
 		return err
 	}

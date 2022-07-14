@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/iconimpact/replaceme/config"
-	"github.com/iconimpact/replaceme/services/static"
+	"github.com/efimovalex/replaceme/config"
+	"github.com/efimovalex/replaceme/services/static"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

@@ -106,7 +106,7 @@ jobs:
       - name: Checkout forge-gitops
         uses: actions/checkout@v3
         with:
-          repository: iconimpact/forge-gitops
+          repository: efimovalex/forge-gitops
           ref: main
           token: ${{ secrets.GH_PAT }}
           path: deploy-tf

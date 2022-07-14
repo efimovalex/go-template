@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iconimpact/replaceme/config"
+	"github.com/efimovalex/replaceme/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -51,7 +51,7 @@ func TestNew(t *testing.T) {
 
 				return &cfg2
 			}(),
-			wantErr: errors.New(`internal error: failed to parse the issuer url: parse "https://\\/": invalid character "\\" in host name`),
+			wantErr: errors.New(`failed to parse the issuer url: parse "https://\\/": invalid character "\\" in host name`),
 		},
 	}
 	for _, tt := range tests {

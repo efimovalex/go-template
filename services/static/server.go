@@ -6,7 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iconimpact/replaceme/config"
+	"github.com/efimovalex/replaceme/config"
 	"github.com/rs/zerolog/log"
 )
 

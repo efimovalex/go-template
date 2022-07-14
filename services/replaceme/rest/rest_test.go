@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	auth "github.com/iconimpact/replaceme/internal/auth0"
-	"github.com/iconimpact/replaceme/internal/sqldb"
+	auth "github.com/efimovalex/replaceme/internal/auth0"
+	"github.com/efimovalex/replaceme/internal/sqldb"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )

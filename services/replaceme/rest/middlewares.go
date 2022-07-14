@@ -12,8 +12,7 @@ import (
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/jwks"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
-	"github.com/iconimpact/go-core/errors"
-	auth "github.com/iconimpact/replaceme/internal/auth0"
+	auth "github.com/efimovalex/replaceme/internal/auth0"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -105,8 +104,7 @@ func (rest *R) UserCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		cc, err := auth.ClaimsValue(r.Context())
 		if err != nil {
-			err := errors.E(err, errors.Unauthorized, "invalid auth claims")
-			rest.JSONError(w, err)
+			rest.JSONError(w, http.StatusUnauthorized, err)
 
 			return
 		}
@@ -143,8 +141,7 @@ func (rest *R) AuthMiddlewareSetup(a *auth.Auth) (*jwtmiddleware.JWTMiddleware, 
 	}
 
 	errorHandler := func(w http.ResponseWriter, rq *http.Request, err error) {
-		err = errors.E(err, errors.Unauthorized, "invalid token")
-		rest.JSONError(w, err)
+		rest.JSONError(w, http.StatusUnauthorized, err)
 	}
 
 	middleware := jwtmiddleware.New(

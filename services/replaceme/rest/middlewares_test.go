@@ -8,7 +8,7 @@ import (
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
 	"github.com/auth0/go-jwt-middleware/v2/validator"
-	auth "github.com/iconimpact/replaceme/internal/auth0"
+	auth "github.com/efimovalex/replaceme/internal/auth0"
 	"github.com/rs/zerolog"
 
 	"github.com/stretchr/testify/assert"
@@ -139,7 +139,7 @@ func TestUserCtx(t *testing.T) {
 		respBody := respRecorder.Body.String()
 		assert.Equal(
 			t, http.StatusUnauthorized, respRecorder.Code, "body:\n%s", respBody)
-		assert.Equal(t, `{"message":"invalid auth claims"}`, respBody)
+		assert.Equal(t, `{"message":"no auth claims found in context"}`, respBody)
 
 	})
 

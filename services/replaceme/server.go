@@ -5,13 +5,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iconimpact/replaceme/config"
-	auth "github.com/iconimpact/replaceme/internal/auth0"
-	"github.com/iconimpact/replaceme/internal/mongodb"
-	"github.com/iconimpact/replaceme/internal/redisdb"
-	"github.com/iconimpact/replaceme/internal/sqldb"
-	"github.com/iconimpact/replaceme/services/replaceme/healthcheck"
-	"github.com/iconimpact/replaceme/services/replaceme/rest"
+	"github.com/efimovalex/replaceme/config"
+	auth "github.com/efimovalex/replaceme/internal/auth0"
+	"github.com/efimovalex/replaceme/internal/mongodb"
+	"github.com/efimovalex/replaceme/internal/redisdb"
+	"github.com/efimovalex/replaceme/internal/sqldb"
+	"github.com/efimovalex/replaceme/services/replaceme/healthcheck"
+	"github.com/efimovalex/replaceme/services/replaceme/rest"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -27,6 +27,8 @@ type Server struct {
 
 	REST        Service
 	HealthCheck Service
+
+	SwaggerUI Service
 
 	logger zerolog.Logger
 
@@ -69,8 +71,7 @@ func (s *Server) Start() {
 	// start health check server
 	go s.HealthCheck.Start()
 	go s.REST.Start()
-
-	s.checkSignal()
+	go s.checkSignal()
 }
 
 func (s *Server) checkSignal() {

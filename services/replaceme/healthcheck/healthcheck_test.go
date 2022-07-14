@@ -8,10 +8,10 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/efimovalex/replaceme/internal/mongodb"
+	"github.com/efimovalex/replaceme/internal/redisdb"
+	"github.com/efimovalex/replaceme/internal/sqldb"
 	"github.com/go-redis/redismock/v8"
-	"github.com/iconimpact/replaceme/internal/mongodb"
-	"github.com/iconimpact/replaceme/internal/redisdb"
-	"github.com/iconimpact/replaceme/internal/sqldb"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"

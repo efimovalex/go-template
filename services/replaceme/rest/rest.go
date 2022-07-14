@@ -7,12 +7,11 @@ import (
 	"time"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
+	auth "github.com/efimovalex/replaceme/internal/auth0"
+	"github.com/efimovalex/replaceme/internal/mongodb"
+	"github.com/efimovalex/replaceme/internal/redisdb"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/iconimpact/go-core/errors"
-	auth "github.com/iconimpact/replaceme/internal/auth0"
-	"github.com/iconimpact/replaceme/internal/mongodb"
-	"github.com/iconimpact/replaceme/internal/redisdb"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -49,7 +48,7 @@ func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, port
 	var err error
 	rest.AuthMiddleware, err = rest.AuthMiddlewareSetup(a)
 	if err != nil {
-		return nil, errors.E(err, errors.Internal, "unable to setup jwt middleware")
+		return nil, err
 	}
 
 	mux := chi.NewRouter()
@@ -120,21 +119,11 @@ type errorResponse struct {
 // JSONError returns an HTTP response as JSON message with status code
 // base on app err Kind, Msg from app err HTTPMessage.
 // Logs the error if l is not nil.
-func (rest *R) JSONError(w http.ResponseWriter, err error) {
+func (rest *R) JSONError(w http.ResponseWriter, status int, err error) {
 	var errRsp interface{}
-	var status int
-	var errMsg string
 
 	// set custom app err Message
-	appErr, ok := err.(*errors.Error)
-	if !ok {
-		status = http.StatusInternalServerError
-		errMsg = "Internal Server Error"
-	} else {
-		status = errors.ToHTTPStatus(appErr)
-		errMsg = errors.ToHTTPResponse(appErr)
-	}
-	errRsp = errorResponse{Message: errMsg}
+	errRsp = errorResponse{Message: err.Error()}
 
 	rest.JSON(w, status, errRsp)
 }
