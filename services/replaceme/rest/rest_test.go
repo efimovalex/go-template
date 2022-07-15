@@ -12,12 +12,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func NewTestREST(t *testing.T) REST {
+func NewTestREST(t *testing.T) *R {
 	r := R{
 		logger:         zerolog.Nop(),
 		DB:             postgres.NewTestDB(t),
 		prettyResponse: true,
 	}
+
+	r.SetupRouter()
 
 	var err error
 	r.AuthMiddleware, err = r.AuthMiddlewareSetup(auth.New("https://some-domain/", []string{"some-audience"}))
@@ -43,10 +45,9 @@ func TestREST_New(t *testing.T) {
 }
 
 func TestREST_Stop(t *testing.T) {
-	h := NewTestREST(t)
-
-	r := h.(*R)
-	testServer := httptest.NewServer(http.HandlerFunc(r.GetRoot))
+	r := NewTestREST(t)
+	r.SetupRouter()
+	testServer := httptest.NewServer(r.Router)
 	defer testServer.Close()
 	r.srv = testServer.Config
 
@@ -54,7 +55,7 @@ func TestREST_Stop(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
-	h.Stop()
+	r.Stop()
 
 	_, err = http.Get(testServer.URL + "/")
 	assert.Error(t, err)

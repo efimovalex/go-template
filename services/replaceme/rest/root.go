@@ -3,6 +3,8 @@ package rest
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 // Message is a simple JSON response
@@ -22,11 +24,11 @@ type Message struct {
 // @Failure 422 {object} Message "Params validation error"
 // @Failure 500 {object} Message "Internal server error"
 // @Router / [get]
-func (rest *R) GetRoot(resp http.ResponseWriter, r *http.Request) {
-	name := r.URL.Query().Get("name")
+func (rest *R) GetRoot(c echo.Context) error {
+	name := c.QueryParams().Get("name")
 	if name == "" {
 		name = "World"
 	}
 
-	rest.JSON(resp, http.StatusOK, Message{fmt.Sprintf("Hello, %s!", name)})
+	return rest.JSON(c, http.StatusOK, Message{fmt.Sprintf("Hello, %s!", name)})
 }
