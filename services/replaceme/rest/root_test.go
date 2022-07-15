@@ -3,9 +3,11 @@ package rest
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
+	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,7 +15,7 @@ func TestREST_GetRoot(t *testing.T) {
 	tests := []struct {
 		name               string
 		body               string
-		qname              string
+		queryParams        map[string]string
 		expectedStatusCode int
 		expectedBody       string
 	}{
@@ -26,7 +28,7 @@ func TestREST_GetRoot(t *testing.T) {
 		{
 			name:               "Success other name",
 			body:               "",
-			qname:              "Alex",
+			queryParams:        map[string]string{"name": "Alex"},
 			expectedStatusCode: http.StatusOK,
 			expectedBody:       `{"message":"Hello, world!"}`,
 		},
@@ -34,19 +36,23 @@ func TestREST_GetRoot(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := NewTestREST(t).(*R)
+			r := NewTestREST(t)
 
-			req, err := http.NewRequest("GET", "/", strings.NewReader(tt.body))
+			e := echo.New()
+			q := make(url.Values)
+			if tt.queryParams != nil {
+				for k, v := range tt.queryParams {
+					q.Set(k, v)
+				}
+			}
+			req, err := http.NewRequest("GET", "/?"+q.Encode(), strings.NewReader(tt.body))
 			assert.NoError(t, err)
 			w := httptest.NewRecorder()
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			c := e.NewContext(req, w)
 
-			if tt.qname != "" {
-				setQueryParams(req, map[string][]string{"name": {tt.qname}})
-			}
-
-			setURLParams(req, map[string]string{"name": "replaceme"})
-
-			r.GetRoot(w, req)
+			err = r.GetRoot(c)
+			assert.NoError(t, err)
 
 			assert.Equal(t, tt.expectedStatusCode, w.Code)
 			checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})

@@ -1,11 +1,13 @@
 # Go Project Template
 A flexible template that allows the quick starting of one or more new golang APIs, processing units or microservices.
+
+Currently it is wired to start a single service 
 ## Introduction
 Find and replace `replaceme` string in all project with your new project name for fast development start.
 
 File structure: 
 
-- cmd -> where the main files live
+- ./ -> where the main file lives
 - config -> package which has the role of loading the starting config
 - docs -> swagger generated files
 - internal -> clearly defined internal packages and adapters for other services

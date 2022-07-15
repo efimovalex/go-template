@@ -2,7 +2,6 @@ package rest
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"time"
 
@@ -10,23 +9,23 @@ import (
 	auth "github.com/efimovalex/replaceme/internal/auth0"
 	"github.com/efimovalex/replaceme/internal/mongodb"
 	"github.com/efimovalex/replaceme/internal/redisdb"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/labstack/echo/v4"
+
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
-
-type REST interface {
-	Start()
-	Stop()
-}
 
 type DB interface {
 	Ping() error
 }
 
+type Router interface {
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
+	NewContext(r *http.Request, w http.ResponseWriter) echo.Context
+}
+
 type R struct {
-	Router *chi.Mux
+	Router Router
 	srv    *http.Server
 
 	DB    DB
@@ -39,7 +38,7 @@ type R struct {
 	prettyResponse bool
 }
 
-func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, prettyResponse bool, port string) (REST, error) {
+func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, prettyResponse bool, port string) (*R, error) {
 	rest := &R{
 		DB:             DB,
 		Mongo:          Mongo,
@@ -53,21 +52,7 @@ func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, pret
 		return nil, err
 	}
 
-	mux := chi.NewRouter()
-
-	// Add middlewares
-	mux.Use(rest.LogRequestMiddleware)
-	mux.Use(addTimeContextMiddleware) // used for request-time and action-time headers
-	//r.Use(timeTrackingMiddleware)
-	mux.Use(middleware.RequestID)
-	mux.Use(middleware.RealIP)
-	mux.Use(middleware.Recoverer)
-	mux.Use(middleware.Timeout(180 * time.Second))
-
-	mux.Use(CORSMiddleware)
-
-	rest.Router = mux
-	rest.AddRoutes()
+	rest.SetupRouter()
 
 	rest.srv = &http.Server{Addr: ":" + port, Handler: rest.Router}
 
@@ -96,28 +81,19 @@ func (rest *R) Stop() {
 // It also sets the Content-Type as "application/json" and
 // X-Content-Type-Options as "nosniff".
 // Logs the status and v if l is not nil.
-func (rest *R) JSON(w http.ResponseWriter, status int, v interface{}) {
-	var jsonBytes []byte
+func (rest *R) JSON(c echo.Context, status int, v interface{}) error {
 	var err error
 	if rest.prettyResponse {
-		jsonBytes, err = json.MarshalIndent(v, "", "\t")
+		err = c.JSONPretty(status, v, "\t")
 	} else {
-		jsonBytes, err = json.Marshal(v)
+		err = c.JSON(status, v)
 	}
 	if err != nil {
 		rest.logger.Error().Err(err).Msg("error json encoding response")
 
-		return
+		return err
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(status)
-
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		rest.logger.Error().Err(err).Msg("error writing response")
-	}
+	return nil
 }
 
 type errorResponse struct {
@@ -127,6 +103,6 @@ type errorResponse struct {
 // JSONError returns an HTTP response as JSON message with status code
 // base on app err Kind, Msg from app err HTTPMessage.
 // Logs the error if l is not nil.
-func (rest *R) JSONError(w http.ResponseWriter, status int, err error) {
-	rest.JSON(w, status, errorResponse{Message: err.Error()})
+func (rest *R) JSONError(c echo.Context, status int, err error) error {
+	return rest.JSON(c, status, errorResponse{Message: err.Error()})
 }

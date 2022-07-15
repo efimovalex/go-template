@@ -2,10 +2,8 @@ package rest
 
 import (
 	"bufio"
-	"context"
 	"flag"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -14,7 +12,6 @@ import (
 	"testing"
 
 	"github.com/andreyvit/diff"
-	"github.com/go-chi/chi"
 )
 
 var update = flag.Bool("update", false, "update test data files")
@@ -52,8 +49,7 @@ func checkResponseWithTestDataFile(t *testing.T, responseBody []byte, ignoredFie
 
 	re, _ := regexp.Compile(`(\s*"(` + ignoreCondtions + `)":\s*"?\S*"?,?)`)
 	actual := re.ReplaceAllString(string(responseBody), "")
-
-	expected := re.ReplaceAllString(strings.TrimSpace(string(g)), "")
+	expected := re.ReplaceAllString(string(g), "")
 
 	if actual != expected {
 		diffFile := diff.LineDiff(expected, actual)
@@ -74,25 +70,4 @@ func checkResponseWithTestDataFile(t *testing.T, responseBody []byte, ignoredFie
 	}
 
 	return true
-}
-
-func setQueryParams(r *http.Request, params map[string][]string) {
-	for k, v := range params {
-		url := r.URL
-		q := url.Query()
-		for _, s := range v {
-			q.Add(k, s)
-		}
-		url.RawQuery = q.Encode()
-		r.URL = url
-	}
-}
-
-func setURLParams(r *http.Request, params map[string]string) *http.Request {
-	rctx := chi.NewRouteContext()
-	for k, v := range params {
-		rctx.URLParams.Add(k, v)
-	}
-
-	return r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 }
