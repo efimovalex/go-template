@@ -31,13 +31,6 @@ const docTemplate = `{
                 "summary": "[get] /",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Example: Bearer token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
                         "description": "request JSON params",
                         "name": "data",
                         "in": "body",

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"os"
 
@@ -17,7 +18,8 @@ const (
 
 // main - main entry point that loads configuration and starts the services
 func main() {
-	if err := run(os.Args, os.Stdout); err != nil {
+	err := run(os.Args, os.Stdout)
+	if err != nil {
 		log.Error().Err(err).Msg("failed to run")
 		os.Exit(exitFail)
 	}
@@ -25,6 +27,8 @@ func main() {
 }
 
 func run(args []string, stdout io.Writer) error {
+	ctx, done := context.WithCancel(context.Background())
+	defer done()
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	cfg, err := config.Load()
 	if err != nil {
@@ -46,7 +50,10 @@ func run(args []string, stdout io.Writer) error {
 		return err
 	}
 
-	server.Start()
+	err = server.Start(ctx)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

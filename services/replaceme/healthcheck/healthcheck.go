@@ -3,6 +3,7 @@ package healthcheck
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"time"
 
@@ -50,20 +51,31 @@ func New(DB Ping, Mongo Ping, Redis Ping, port string) *Health {
 	return h
 }
 
-func (h *Health) Start() {
+func (h *Health) Start(ctx context.Context) error {
 	h.logger.Info().Msgf("Starting healthcheck service %s", h.srv.Addr)
-	if err := h.srv.ListenAndServe(); err != http.ErrServerClosed {
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(ctx, "tcp", h.srv.Addr)
+	if err != nil {
+		return err
+	}
+	if err := h.srv.Serve(ln); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		h.logger.Fatal().Msgf("healthcheck server error: %v", err)
+		return err
 	}
+
+	return nil
 }
 
-func (h *Health) Stop() {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+func (h *Health) Stop(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	if err := h.srv.Shutdown(ctx); err != nil {
-		// Error from closing listeners, or context timeout:
-		h.logger.Error().Err(err).Msgf("healthcheck server shutdown error")
+		if err == context.Canceled {
+			h.logger.Info().Msg("Healthcheck server shutdown gracefully")
+		} else {
+			h.logger.Error().Msgf("Swagger server error: %v", err)
+		}
 	}
 }
 
@@ -97,7 +109,9 @@ func (h *Health) Check(w http.ResponseWriter, r *http.Request) {
 func (h *Health) JSON(w http.ResponseWriter, status int, v interface{}) {
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {
-		panic("respond: " + err.Error())
+		h.logger.Error().Err(err).Msgf("Unable to marshal response")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

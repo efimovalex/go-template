@@ -1,11 +1,13 @@
 package healthcheck
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/efimovalex/replaceme/internal/mongodb"
@@ -76,7 +78,7 @@ func TestHealth_Check(t *testing.T) {
 	}
 }
 
-func TestHealth_Stop(t *testing.T) {
+func TestHealth_StopGrecefully(t *testing.T) {
 	db := postgres.NewTestDB(t)
 	mdb := mongodb.NewTestDB(t)
 	rdb := redisdb.NewTestDB(t)
@@ -91,7 +93,37 @@ func TestHealth_Stop(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
-	h.Stop()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	<-ctx.Done()
+	h.Stop(ctx)
+
+	_, err = http.Get(testServer.URL + "/healthcheck")
+	assert.Error(t, err)
+	assert.Equal(t, `Get "`+testServer.URL+`/healthcheck": dial tcp 127.0.0.1:`+strings.Split(testServer.URL, ":")[2]+`: connect: connection refused`, err.Error())
+}
+
+func TestHealth_StopDeadline(t *testing.T) {
+	db := postgres.NewTestDB(t)
+	mdb := mongodb.NewTestDB(t)
+	rdb := redisdb.NewTestDB(t)
+
+	h := New(db, mdb, rdb, "3000")
+
+	testServer := httptest.NewServer(http.HandlerFunc(h.Check))
+	defer testServer.Close()
+	h.srv = testServer.Config
+
+	resp, err := http.Get(testServer.URL + "/healthcheck")
+	assert.NoError(t, err)
+
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+	<-ctx.Done()
+	h.Stop(ctx)
 
 	_, err = http.Get(testServer.URL + "/healthcheck")
 	assert.Error(t, err)

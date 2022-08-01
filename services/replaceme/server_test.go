@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -78,8 +79,10 @@ type SMock struct {
 func (h *SMock) Check(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
-func (h *SMock) Start() {}
-func (h *SMock) Stop() {
+func (h *SMock) Start(ctx context.Context) error {
+	return nil
+}
+func (h *SMock) Stop(ctx context.Context) {
 	h.testServer.Close()
 }
 
@@ -106,15 +109,20 @@ func TestServer_Start(t *testing.T) {
 				cfg:         &config.Config{},
 			}
 
-			go s.Start()
+			ctx, cancel := context.WithCancel(context.Background())
+
+			go func() {
+				err := s.Start(ctx)
+				assert.NoError(t, err)
+			}()
 
 			time.Sleep(150 * time.Millisecond)
 
 			resp, err := http.Get(h.testServer.URL + "/healthcheck")
 			assert.NoError(t, err)
 			assert.Equal(t, resp.StatusCode, http.StatusOK)
-			s.sigChan <- os.Kill
-
+			cancel()
+			time.Sleep(150 * time.Millisecond)
 			_, err = http.Get(h.testServer.URL + "/healthcheck")
 			assert.Error(t, err)
 			assert.Equal(t, `Get "`+h.testServer.URL+`/healthcheck": dial tcp 127.0.0.1:`+strings.Split(h.testServer.URL, ":")[2]+`: connect: connection refused`, err.Error())

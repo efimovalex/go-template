@@ -17,7 +17,6 @@ type Message struct {
 // @Tags root
 // @Accept  json
 // @Produce json
-// @Param Authorization header string true "Example: Bearer token"
 // @Param data body string true "request JSON params"
 // @Success 200 {object} string "No content"
 // @Failure 400 {object} Message "Invalid request JSON"

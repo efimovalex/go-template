@@ -68,7 +68,7 @@ build: ## Builds go binary
 	go build -o ./build/$(BINARY_NAME) main.go
 
 run: docs ## Runs main package
-	go run main.go;
+	go run main.go
 
 docs swag: ## Generate swagger documentation json/yaml
 	@swag --version

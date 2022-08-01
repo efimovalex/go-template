@@ -13,11 +13,6 @@ paths:
       - application/json
       description: Returns root endpoint
       parameters:
-      - description: 'Example: Bearer token'
-        in: header
-        name: Authorization
-        required: true
-        type: string
       - description: request JSON params
         in: body
         name: data

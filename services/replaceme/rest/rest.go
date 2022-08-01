@@ -2,6 +2,7 @@ package rest
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"time"
 
@@ -54,26 +55,35 @@ func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, pret
 
 	rest.SetupRouter()
 
-	rest.srv = &http.Server{Addr: ":" + port, Handler: rest.Router}
+	rest.srv = &http.Server{Addr: "0.0.0.0:" + port, Handler: rest.Router}
 
 	return rest, nil
 }
 
-func (rest *R) Start() {
+func (rest *R) Start(ctx context.Context) error {
 	rest.logger.Info().Msgf("Starting REST service %s", rest.srv.Addr)
-
-	if err := rest.srv.ListenAndServe(); err != http.ErrServerClosed {
+	lc := net.ListenConfig{}
+	ln, err := lc.Listen(ctx, "tcp", rest.srv.Addr)
+	if err != nil {
+		return err
+	}
+	if err := rest.srv.Serve(ln); err != http.ErrServerClosed {
 		// Error starting or closing listener:
 		rest.logger.Fatal().Msgf("healthcheck server error: %v", err)
+		return err
 	}
+	return nil
 }
 
-func (rest *R) Stop() {
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+func (rest *R) Stop(ctx context.Context) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 	if err := rest.srv.Shutdown(ctx); err != nil {
-		// Error from closing listeners, or context timeout:
-		rest.logger.Error().Err(err).Msg("healthcheck server shutdown error")
+		if err == context.Canceled {
+			rest.logger.Info().Msg("REST server shutdown gracefully")
+		} else {
+			rest.logger.Error().Msgf("Swagger server error: %v", err)
+		}
 	}
 }
 

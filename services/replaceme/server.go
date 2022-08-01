@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"os"
 	"os/signal"
 	"syscall"
@@ -15,11 +16,12 @@ import (
 	"github.com/efimovalex/replaceme/services/replaceme/swagger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"golang.org/x/sync/errgroup"
 )
 
 type Service interface {
-	Start()
-	Stop()
+	Start(ctx context.Context) error
+	Stop(ctx context.Context)
 }
 type Server struct {
 	cfg *config.Config
@@ -28,6 +30,7 @@ type Server struct {
 
 	REST        Service
 	HealthCheck Service
+	Swagger     Service
 
 	SwaggerUI Service
 
@@ -62,38 +65,54 @@ func New(cfg *config.Config) (*Server, error) {
 		DB:          db,
 		REST:        rest,
 		HealthCheck: healthcheck.New(db, mongodb, redis, cfg.HealthCheck.Port),
-
-		sigChan: make(chan os.Signal, 1),
-		logger:  log.With().Str("component", "server").Logger(),
+		Swagger:     swagger.New(cfg.Swagger.Port, cfg.REST.Port),
+		sigChan:     make(chan os.Signal, 1),
+		logger:      log.With().Str("component", "server").Logger(),
 	}, nil
 }
 
-func (s *Server) Start() {
+func (s *Server) Start(ctx context.Context) error {
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+
+	defer stop()
+	errWg, errCtx := errgroup.WithContext(ctx)
+
 	if s.cfg.Swagger.Enable {
-		swagger := swagger.New(s.cfg.Swagger.Port)
-		defer swagger.Stop()
-		go swagger.Start()
+		errWg.Go(func() error {
+			return s.Swagger.Start(errCtx)
+		})
 	}
 	// start health check server
-	go s.HealthCheck.Start()
-	go s.REST.Start()
-	s.checkSignal()
-}
+	errWg.Go(func() error {
+		return s.HealthCheck.Start(errCtx)
+	})
+	errWg.Go(func() error {
+		return s.REST.Start(errCtx)
+	})
 
-func (s *Server) checkSignal() {
-	// trap signals
-	signal.Notify(s.sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-
-	for sig := range s.sigChan {
-		// log signal
-		s.logger.Info().Msgf("Received signal: %d (%s)", sig, sig)
-
-		if sig == syscall.SIGINT || sig == syscall.SIGKILL || sig == syscall.SIGTERM {
-
-			s.HealthCheck.Stop()
-			s.REST.Stop()
-
-			return
+	errWg.Go(func() error {
+		<-ctx.Done()
+		s.logger.Info().Msg("stopping server")
+		stop()
+		s.REST.Stop(ctx)
+		s.HealthCheck.Stop(ctx)
+		if s.cfg.Swagger.Enable {
+			s.Swagger.Stop(ctx)
 		}
+		return nil
+	})
+
+	err := errWg.Wait()
+
+	if err == context.Canceled || err == nil {
+		s.logger.Info().Msg("gracefully quit server")
+
+		return nil
+	} else if err != nil {
+		s.logger.Error().Err(err).Msg("server quit with error")
+
+		return err
 	}
+
+	return nil
 }

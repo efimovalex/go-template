@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -55,7 +56,7 @@ func TestREST_Stop(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
-	r.Stop()
+	r.Stop(context.Background())
 
 	_, err = http.Get(testServer.URL + "/")
 	assert.Error(t, err)
