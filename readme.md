@@ -1,4 +1,5 @@
-# Go Project Template
+[![CI-pipeline](https://github.com/efimovalex/go-template/actions/workflows/ci.yml/badge.svg)](https://github.com/efimovalex/go-template/actions/workflows/ci.yml)
+# Go Project Template 
 A flexible template that allows the quick starting of one or more new golang APIs, processing units or microservices.
 
 Currently it is wired to start a single service 
