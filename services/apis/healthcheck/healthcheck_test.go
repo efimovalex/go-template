@@ -193,10 +193,10 @@ func TestHealth_Start(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Log(testServer.URL)
-	h := New(db, mdb, rdb, "not_a_port")
+	h := New(db, mdb, rdb, "not:a:port")
 
 	err := h.Start(context.Background())
 
 	assert.Error(t, err)
-	assert.Equal(t, "listen tcp: lookup tcp/not_a_port: nodename nor servname provided, or not known", err.Error())
+	assert.Equal(t, "listen tcp: address :not:a:port: too many colons in address", err.Error())
 }
