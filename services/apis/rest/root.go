@@ -17,7 +17,7 @@ type Message struct {
 // @Tags root
 // @Accept  json
 // @Produce json
-// @Param data body string true "request JSON params"
+// @Param name query string false "name"
 // @Success 200 {object} string "No content"
 // @Failure 400 {object} Message "Invalid request JSON"
 // @Failure 422 {object} Message "Params validation error"

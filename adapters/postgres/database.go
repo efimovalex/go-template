@@ -16,6 +16,8 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const driverName = "postgres"
+
 // Client - database client
 type Client struct {
 	*sqlx.DB
@@ -26,7 +28,7 @@ type Client struct {
 func New(host, port, user, password, database, ssl string) (*Client, error) {
 	var err error
 	c := new(Client)
-	c.logger = log.With().Str("component", "postgres").Logger()
+	c.logger = log.With().Str("component", driverName).Logger()
 
 	conn := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=%s", host, port, user, password, ssl)
 
@@ -34,7 +36,7 @@ func New(host, port, user, password, database, ssl string) (*Client, error) {
 		conn += fmt.Sprintf(" dbname=%s", database)
 	}
 
-	c.DB, err = sqlx.Connect("postgres", conn)
+	c.DB, err = sqlx.Connect(driverName, conn)
 	if err != nil {
 		c.logger.Error().Err(err).Msg("Unable to connect to database")
 		return nil, err
@@ -80,11 +82,16 @@ func (db *Client) logQuery(query string,
 		}
 
 		if rv.Kind() == reflect.Bool {
-			if rv.Bool() {
-				a = append(a, 1)
+			if driverName == "mysql" {
+				if rv.Bool() {
+					a = append(a, 1)
+				} else {
+					a = append(a, 0)
+				}
 			} else {
-				a = append(a, 0)
+				a = append(a, fmt.Sprintf(`%t`, rv.Bool()))
 			}
+
 			continue
 		}
 

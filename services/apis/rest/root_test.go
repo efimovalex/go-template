@@ -58,4 +58,22 @@ func TestREST_GetRoot(t *testing.T) {
 			checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
 		})
 	}
+
+	t.Run("Success without pretty response", func(t *testing.T) {
+		r := NewTestREST(t)
+		r.prettyResponse = false
+		e := echo.New()
+
+		req, err := http.NewRequest("GET", "/", strings.NewReader(""))
+		assert.NoError(t, err)
+		w := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		c := e.NewContext(req, w)
+
+		err = r.GetRoot(c)
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		checkResponseWithTestDataFile(t, w.Body.Bytes(), []string{})
+	})
 }

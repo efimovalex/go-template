@@ -13,12 +13,10 @@ paths:
       - application/json
       description: Returns root endpoint
       parameters:
-      - description: request JSON params
-        in: body
-        name: data
-        required: true
-        schema:
-          type: string
+      - description: name
+        in: query
+        name: name
+        type: string
       produces:
       - application/json
       responses:

@@ -16,19 +16,27 @@ import (
 type User struct {
 	ID          int       `db:"id"`
 	Email       string    `db:"email"`
-	Password    string    `json:"-" db:"password"`
+	Password    string    `json:"password" db:"password"`
 	Description string    `db:"description"`
 	FirstName   string    `db:"first_name"`
 	LastName    string    `db:"last_name"`
+	Active      bool      `db:"active"`
 	CreatedAt   time.Time `db:"created_at"`
 	UpdatedAt   time.Time `db:"updated_at"`
 }
 
 // UserByEmail loads User with given email, returns nil if not found
-func (db *Client) FindOneUserByEmail(ctx context.Context, email string) (*User, error) {
+func (db *Client) FindOneUserByEmail(ctx context.Context, email string, active *bool) (*User, error) {
 	u := User{}
-	stmt, args, err := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Select("*").
-		From("users").Where(sq.Eq{"email": email}).Limit(1).ToSql()
+
+	b := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Select("*").
+		From("users").Where(sq.Eq{"email": email}).Limit(1)
+
+	if active != nil {
+		b = b.Where(sq.Eq{"active": *active})
+	}
+
+	stmt, args, err := b.ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +53,7 @@ func (db *Client) FindOneUserByEmail(ctx context.Context, email string) (*User, 
 	return &u, nil
 }
 
-// Insert sanitizes and inserts a User in database
+// InsertUser - inserts a User in database
 func (db *Client) InsertUser(ctx context.Context, u *User) error {
 	if u.Password == "" {
 		return errors.New("password is required")
@@ -59,7 +67,7 @@ func (db *Client) InsertUser(ctx context.Context, u *User) error {
 	u.Password = string(hashedPassword)
 
 	// is the email already in the database? it must be unique
-	user, err := db.FindOneUserByEmail(ctx, u.Email)
+	user, err := db.FindOneUserByEmail(ctx, u.Email, nil)
 	if err != nil {
 		return err
 	}
@@ -70,8 +78,8 @@ func (db *Client) InsertUser(ctx context.Context, u *User) error {
 
 	// insert to database
 	stmt, args, err := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Insert("users").
-		Columns("email", "password", "description", "first_name", "last_name").
-		Values(u.Email, u.Password, u.Description, u.FirstName, u.LastName).Suffix(" RETURNING * ").ToSql()
+		Columns("email", "password", "description", "first_name", "last_name", "active").
+		Values(u.Email, u.Password, u.Description, u.FirstName, u.LastName, u.Active).Suffix(" RETURNING * ").ToSql()
 	if err != nil {
 		return err
 	}

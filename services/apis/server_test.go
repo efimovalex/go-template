@@ -98,19 +98,25 @@ func TestServer_Start(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := new(SMock)
 			h := new(SMock)
+			sg := new(SMock)
 
 			r.testServer = httptest.NewServer(nil)
 			h.testServer = httptest.NewServer(http.HandlerFunc(h.Check))
+			sg.testServer = httptest.NewServer(nil)
 
 			s := &Server{
 				sigChan:     make(chan os.Signal, 1),
 				HealthCheck: h,
 				REST:        r,
-				cfg:         &config.Config{},
+				Swagger:     sg,
+				cfg: &config.Config{
+					Swagger: config.Swagger{
+						Enable: true,
+					},
+				},
 			}
 
 			ctx, cancel := context.WithCancel(context.Background())
-
 			go func() {
 				err := s.Start(ctx)
 				assert.NoError(t, err)

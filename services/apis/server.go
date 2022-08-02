@@ -6,14 +6,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/efimovalex/replaceme/adapters/mongodb"
+	"github.com/efimovalex/replaceme/adapters/postgres"
+	"github.com/efimovalex/replaceme/adapters/redisdb"
 	"github.com/efimovalex/replaceme/config"
 	auth "github.com/efimovalex/replaceme/internal/auth0"
-	"github.com/efimovalex/replaceme/internal/mongodb"
-	"github.com/efimovalex/replaceme/internal/postgres"
-	"github.com/efimovalex/replaceme/internal/redisdb"
-	"github.com/efimovalex/replaceme/services/replaceme/healthcheck"
-	"github.com/efimovalex/replaceme/services/replaceme/rest"
-	"github.com/efimovalex/replaceme/services/replaceme/swagger"
+	"github.com/efimovalex/replaceme/services/apis/healthcheck"
+	"github.com/efimovalex/replaceme/services/apis/rest"
+	"github.com/efimovalex/replaceme/services/apis/swagger"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"golang.org/x/sync/errgroup"
@@ -55,6 +55,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, err
 	}
 	claims := auth.New(cfg.Auth.Domain, []string{cfg.Auth.Audience})
+
 	rest, err := rest.New(db, mongodb, redis, claims, cfg.REST.Pretty, cfg.REST.Port)
 	if err != nil {
 		return nil, err

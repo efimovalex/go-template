@@ -6,9 +6,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/efimovalex/replaceme/adapters/postgres"
 	auth "github.com/efimovalex/replaceme/internal/auth0"
-	"github.com/efimovalex/replaceme/internal/postgres"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
@@ -45,7 +46,8 @@ func TestREST_New(t *testing.T) {
 	})
 }
 
-func TestREST_Stop(t *testing.T) {
+func TestHealth_StopGrecefully(t *testing.T) {
+	t.Parallel()
 	r := NewTestREST(t)
 	r.SetupRouter()
 	testServer := httptest.NewServer(r.Router)
@@ -56,9 +58,53 @@ func TestREST_Stop(t *testing.T) {
 	assert.NoError(t, err)
 
 	assert.Equal(t, resp.StatusCode, http.StatusOK)
-	r.Stop(context.Background())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	time.Sleep(time.Millisecond * 5)
+	<-ctx.Done()
+	r.Stop(ctx)
 
 	_, err = http.Get(testServer.URL + "/")
 	assert.Error(t, err)
 	assert.Equal(t, `Get "`+testServer.URL+`/": dial tcp 127.0.0.1:`+strings.Split(testServer.URL, ":")[2]+`: connect: connection refused`, err.Error())
+}
+
+func TestHealth_StopDeadline(t *testing.T) {
+	t.Parallel()
+	r := NewTestREST(t)
+	r.SetupRouter()
+	testServer := httptest.NewServer(r.Router)
+	defer testServer.Close()
+	r.srv = testServer.Config
+
+	resp, err := http.Get(testServer.URL + "/")
+	assert.NoError(t, err)
+
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
+	time.Sleep(time.Millisecond * 5)
+	<-ctx.Done()
+	r.Stop(ctx)
+
+	_, err = http.Get(testServer.URL + "/")
+	assert.Error(t, err)
+	assert.Equal(t, `Get "`+testServer.URL+`/": dial tcp 127.0.0.1:`+strings.Split(testServer.URL, ":")[2]+`: connect: connection refused`, err.Error())
+}
+
+func TestR_Start(t *testing.T) {
+	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Log(testServer.URL)
+	r := NewTestREST(t)
+	r.srv = testServer.Config
+	r.srv.Addr = "not:a:real:address"
+
+	err := r.Start(context.Background())
+
+	assert.Error(t, err)
+	assert.Equal(t, "listen tcp: address not:a:real:address: too many colons in address", err.Error())
 }

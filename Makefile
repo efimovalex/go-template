@@ -23,22 +23,22 @@ test-ci: lint ## Runs the tests with coverage checks + lint
 		retVal=$$? ;\
 		if [ $$retVal -ne 0 ]; then \
 			echo "$$pkgcov"; \
-			echo "🚨 TEST FAIL" ;\
+			echo " 🚨 TEST FAIL" ;\
 			exit $$retVal; \
 		fi;\
 		pcoverage=$$(echo $$pkgcov| grep "coverage" | sed -E "s/.*coverage: ([0-9]*\.[0-9]+)\% of statements/\1/g") ;\
 		if [ ! -z "$$pcoverage" ]; then \
 			if [ $$(echo $${pcoverage%%.*}) -lt $(MINCOVERAGE) ] ; then \
-				echo "🚨 COVERAGE FAIL";\
-				echo "🚨 Test coverage of $$package is $$pcoverage%";\
+				echo " 🚨 COVERAGE FAIL";\
+				echo " 🚨 Test coverage of $$package is $$pcoverage%";\
 				echo "FAIL" ;\
 				echo ;\
 				exit 1 ;\
 			else \
-				echo "✅  Test coverage of $$package is $$pcoverage%" ;\
+				echo " ✅  Test coverage of $$package is $$pcoverage%" ;\
 			fi \
 		else \
-			echo "➖ No tests for $$package" ;\
+			echo " ❗ No tests for $$package" ;\
 		fi \
 	done 
 	@echo 'mode: atomic' > "$(COVERAGE_DIR)"/coverage.cov ;\
@@ -55,7 +55,7 @@ test-ci: lint ## Runs the tests with coverage checks + lint
       echo "FAIL" ;\
       exit 1 ;\
 	else \
-		echo ">> ✅  Test coverage of project is $$pcoverage%";\
+		echo ">>  ✅  Test coverage of project is $$pcoverage%";\
 	fi
 
 test: ## Runs all tests normally

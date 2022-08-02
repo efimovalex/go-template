@@ -31,13 +31,10 @@ const docTemplate = `{
                 "summary": "[get] /",
                 "parameters": [
                     {
-                        "description": "request JSON params",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "type": "string"
-                        }
+                        "type": "string",
+                        "description": "name",
+                        "name": "name",
+                        "in": "query"
                     }
                 ],
                 "responses": {

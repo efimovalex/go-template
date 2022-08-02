@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/efimovalex/replaceme/config"
-	server "github.com/efimovalex/replaceme/services/replaceme"
+	server "github.com/efimovalex/replaceme/services/apis"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )

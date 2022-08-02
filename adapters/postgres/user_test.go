@@ -19,6 +19,7 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 		Description: "description",
 		LastName:    "lastname",
 		FirstName:   "firstname",
+		Active:      true,
 	}
 
 	ctx := context.Background()
@@ -26,7 +27,8 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 	assert.NoError(t, err)
 
 	type args struct {
-		email string
+		email  string
+		active *bool
 	}
 	tests := []struct {
 		name    string
@@ -37,7 +39,8 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 		{
 			name: "Test find user by email",
 			args: args{
-				email: u.Email,
+				email:  u.Email,
+				active: &[]bool{true, false}[0],
 			},
 			want: &u,
 		},
@@ -52,7 +55,7 @@ func TestClient_FindOneUserByEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.FindOneUserByEmail(ctx, tt.args.email)
+			got, err := db.FindOneUserByEmail(ctx, tt.args.email, tt.args.active)
 			if tt.wantErr != nil {
 				assert.Error(t, err)
 				assert.EqualError(t, err, tt.wantErr.Error())

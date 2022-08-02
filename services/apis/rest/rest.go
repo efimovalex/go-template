@@ -7,9 +7,9 @@ import (
 	"time"
 
 	jwtmiddleware "github.com/auth0/go-jwt-middleware/v2"
+	"github.com/efimovalex/replaceme/adapters/mongodb"
+	"github.com/efimovalex/replaceme/adapters/redisdb"
 	auth "github.com/efimovalex/replaceme/internal/auth0"
-	"github.com/efimovalex/replaceme/internal/mongodb"
-	"github.com/efimovalex/replaceme/internal/redisdb"
 	"github.com/labstack/echo/v4"
 
 	"github.com/rs/zerolog"

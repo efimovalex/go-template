@@ -7,10 +7,11 @@ Find and replace `replaceme` string in all project with your new project name fo
 
 File structure: 
 
-- ./ -> where the main file lives
+- ./ -> where the main file lives + configuration files + docker files
+- adapters -> adapters for external services & tools
 - config -> package which has the role of loading the starting config
 - docs -> swagger generated files
-- internal -> clearly defined internal packages and adapters for other services
+- internal -> clearly defined internal packages 
 - schema -> migrations for the used databases
 - services -> the servers and it's dependent services. one cmd main file starts one of the services
 

@@ -110,7 +110,7 @@ func (h *Health) JSON(w http.ResponseWriter, status int, v interface{}) {
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {
 		h.logger.Error().Err(err).Msgf("Unable to marshal response")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		http.Error(w, `{"errors":["Internal Server Error"]}`, http.StatusInternalServerError)
 		return
 	}
 
