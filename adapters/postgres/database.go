@@ -1,3 +1,4 @@
+// Package postgres provides functions to interact with postgres database.
 package postgres
 
 import (
@@ -6,25 +7,23 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"testing"
 
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/stretchr/testify/assert"
 
 	"github.com/jmoiron/sqlx"
 )
 
 const driverName = "postgres"
 
-// Client - database client
+// Client represents a database client that contains functions used to interact with the database.
 type Client struct {
 	*sqlx.DB
 	logger zerolog.Logger
 }
 
-// New - Creates a new Client from a sql.DB
+// New creates a new postgres.Client
 func New(host, port, user, password, database, ssl string) (*Client, error) {
 	var err error
 	c := new(Client)
@@ -51,25 +50,12 @@ func New(host, port, user, password, database, ssl string) (*Client, error) {
 	return c, nil
 }
 
+// Ping checks if the database is reachable
 func (c *Client) Ping() error {
 	return c.DB.Ping()
 }
 
-func NewTestDB(t *testing.T) *Client {
-	if t == nil {
-		return nil
-	}
-	db, err := New("localhost", "5433", "replaceme", "replaceme", "replaceme_test", "disable")
-	assert.NoError(t, err)
-	return db
-}
-
-// ResetTable - USE ONLY FOR TESTING to reset tables
-func (db *Client) ResetTable(t *testing.T, table string) {
-	_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
-	assert.NoError(t, err)
-}
-
+// logQuery logs the query and its parameter values
 func (db *Client) logQuery(query string,
 	args ...interface{}) {
 	query = regexp.MustCompile(`\s+`).ReplaceAllString(query, " ")

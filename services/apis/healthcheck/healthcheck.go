@@ -74,7 +74,7 @@ func (h *Health) Stop(ctx context.Context) {
 		if err == context.Canceled {
 			h.logger.Info().Msg("Healthcheck server shutdown gracefully")
 		} else {
-			h.logger.Error().Msgf("Swagger server error: %v", err)
+			h.logger.Error().Msgf("Healthcheck server error: %v", err)
 		}
 	}
 }

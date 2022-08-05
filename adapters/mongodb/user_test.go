@@ -6,7 +6,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+func (c *Client) ResetCollection(t *testing.T, collection *mongo.Collection) {
+	err := collection.Drop(context.Background())
+	assert.NoError(t, err)
+}
+
+func NewTestDB(t *testing.T) *Client {
+	if t == nil {
+		return nil
+	}
+	db, err := New("localhost", "27017", "replaceme", "replaceme", "replaceme_test", false)
+	assert.NoError(t, err)
+	return db
+}
 
 func TestClient_FindOneUserByEmail(t *testing.T) {
 	db := NewTestDB(t)

@@ -5,7 +5,7 @@
 APP:=replaceme
 BINARY_NAME:=replaceme
 MINCOVERAGE?=70
-PKG_LIST=$(shell go list ./... | grep -Ev "vendor|docs|cmd")
+PKG_LIST=$(shell go list ./... | grep -Ev "vendor|docs|cmd|mock")
 GOCACHE=$(shell pwd)/.build
 COVERAGE_DIR?=.coverage
 LOG_LEVEL?=debug
