@@ -44,12 +44,12 @@ func (cc CustomClaims) Validate(ctx context.Context) error {
 	return nil
 }
 
-// GetUserID ...
+// GetUserID returns the user ID from the claims.
 func (cc CustomClaims) GetUserID() string {
 	return cc["sub"].(string)
 }
 
-// GetUserEmail ...
+// GetUserEmail returns the user email from the claims.
 func (cc CustomClaims) GetUserEmail() string {
 	return cc[claimsKeyEmail].(string)
 }

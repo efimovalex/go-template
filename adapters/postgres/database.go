@@ -50,7 +50,7 @@ func New(host, port, user, password, database, ssl string) (*Client, error) {
 	return c, nil
 }
 
-// Ping checks if the database is reachable
+// Ping pings the database to check if it is alive.
 func (c *Client) Ping() error {
 	return c.DB.Ping()
 }

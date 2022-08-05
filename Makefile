@@ -74,6 +74,10 @@ docs swag: ## Generate swagger documentation json/yaml
 	@swag --version
 	@swag init -p camelcase -g ../main.go -o docs/swagger -d ./config,./services/,./internal --md docs
 
+godoc:
+	@go install golang.org/x/tools/cmd/godoc@latest
+	@godoc -http=:6060 -index -play
+
 up: ## Starts docker containers for dependent services
 	@docker-compose up -d --build --remove-orphans
 

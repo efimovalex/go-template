@@ -1,3 +1,4 @@
+// Package healthcheck is the healthcheck service for this service
 package healthcheck
 
 import (
@@ -11,16 +12,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type HealthCheck interface {
-	Start()
-	Stop()
-
-	Check(w http.ResponseWriter, r *http.Request)
-}
+// Ping interface for a service with a ping functionality
 type Ping interface {
 	Ping() error
 }
 
+// Health a healthcheck service instance
 type Health struct {
 	logger zerolog.Logger
 	srv    *http.Server
@@ -31,11 +28,13 @@ type Health struct {
 	Redis Ping
 }
 
+// HealthCheckResponse is the response for the healthcheck service
 type HealthCheckResponse struct {
 	Message string   `json:"message"`
 	Errors  []string `json:"errors,omitempty"`
 }
 
+// New creates a new healthcheck service
 func New(DB Ping, Mongo Ping, Redis Ping, port string) *Health {
 	h := &Health{
 		DB:    DB,
@@ -51,6 +50,7 @@ func New(DB Ping, Mongo Ping, Redis Ping, port string) *Health {
 	return h
 }
 
+// Start starts the healthcheck service
 func (h *Health) Start(ctx context.Context) error {
 	h.logger.Info().Msgf("Starting healthcheck service %s", h.srv.Addr)
 	lc := net.ListenConfig{}
@@ -67,6 +67,7 @@ func (h *Health) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop stops the healthcheck service
 func (h *Health) Stop(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
@@ -79,6 +80,7 @@ func (h *Health) Stop(ctx context.Context) {
 	}
 }
 
+// Check is the healthcheck handler/controller
 func (h *Health) Check(w http.ResponseWriter, r *http.Request) {
 	// Add your depending services that matter to healthcheck here
 	var extendErrs []string
@@ -106,6 +108,7 @@ func (h *Health) Check(w http.ResponseWriter, r *http.Request) {
 	h.JSON(w, http.StatusOK, HealthCheckResponse{Message: "OK"})
 }
 
+// JSON writes the json response to the response writer
 func (h *Health) JSON(w http.ResponseWriter, status int, v interface{}) {
 	jsonBytes, err := json.Marshal(v)
 	if err != nil {

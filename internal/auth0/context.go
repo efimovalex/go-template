@@ -44,12 +44,12 @@ func ClaimsValue(ctx context.Context) (*CustomClaims, error) {
 	return customClaims, nil
 }
 
-// WithUserID ...
+// WithUserID sets the user ID in the context.
 func WithUserID(ctx context.Context, userID string) context.Context {
 	return context.WithValue(ctx, ctxKeyUserID, userID)
 }
 
-// UserIDValue ...
+// UserIDValue retrieves the user ID from the context.
 func UserIDValue(ctx context.Context) (string, error) {
 	userID, ok := ctx.Value(ctxKeyUserID).(string)
 	if !ok {
@@ -58,12 +58,12 @@ func UserIDValue(ctx context.Context) (string, error) {
 	return userID, nil
 }
 
-// WithUserEmail ...
+// WithUserEmail sets the user email in the context.
 func WithUserEmail(ctx context.Context, email string) context.Context {
 	return context.WithValue(ctx, ctxKeyUserEmail, ctxKeyUserEmail)
 }
 
-// UserEmailValue ...
+// UserEmailValue retrieves the user email from the context.
 func UserEmailValue(ctx context.Context) (string, error) {
 	userEmail, ok := ctx.Value(ctxKeyUserEmail).(string)
 	if !ok {

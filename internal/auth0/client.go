@@ -1,3 +1,4 @@
+// pachage auth provides functionality to enable authentication middleware for auth0
 package auth
 
 import (
@@ -6,6 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Auth is the Auth service struct
 type Auth struct {
 	Domain   string
 	Audience []string
@@ -14,6 +16,7 @@ type Auth struct {
 	logger     zerolog.Logger
 }
 
+// New creates a new Auth service
 func New(domain string, audience []string) *Auth {
 	return &Auth{
 		Domain:   domain,
