@@ -1,3 +1,4 @@
+// Package swagger starts a swagger UI server that displays the swagger documentation of the API service
 package swagger
 
 import (
@@ -14,31 +15,13 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-type Swagger interface {
-	Start()
-	Stop()
-
-	Check(w http.ResponseWriter, r *http.Request)
-}
-type Ping interface {
-	Ping() error
-}
-
+// S is a swagger service implementation
 type S struct {
 	logger zerolog.Logger
 	srv    *http.Server
-
-	// Add your depending services that matter to Swagger here
-	DB    Ping
-	Mongo Ping
-	Redis Ping
 }
 
-type SwaggerResponse struct {
-	Message string   `json:"message"`
-	Errors  []string `json:"errors,omitempty"`
-}
-
+// New creates a new swagger service
 func New(port string, apiPort string) *S {
 	h := &S{
 		srv: &http.Server{Addr: "0.0.0.0:" + port},
@@ -89,6 +72,7 @@ func New(port string, apiPort string) *S {
 	return h
 }
 
+// Start starts the swagger service
 func (h *S) Start(ctx context.Context) error {
 	h.logger.Info().Msgf("Starting swagger service http://%s", h.srv.Addr)
 	h.logger.Info().Msgf("Documentation url:  http://%s/swagger/index.html", h.srv.Addr)
@@ -107,6 +91,7 @@ func (h *S) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop stops the swagger service
 func (h *S) Stop(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

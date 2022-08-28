@@ -2,28 +2,37 @@ package rest
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/efimovalex/replaceme/adapters/postgres"
 	auth "github.com/efimovalex/replaceme/internal/auth0"
+	"github.com/jmoiron/sqlx"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 )
 
+// NewTestREST - creates new REST instance for testing
 func NewTestREST(t *testing.T) *R {
+	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	assert.NoError(t, err)
+	assert.NoError(t, err)
+	mock.ExpectPing().WillReturnError(errors.New("ping error"))
+	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
+
 	r := R{
 		logger:         zerolog.Nop(),
-		DB:             postgres.NewTestDB(t),
+		DB:             &postgres.Client{DB: sqlxMock},
 		prettyResponse: true,
 	}
 
 	r.SetupRouter()
 
-	var err error
 	r.AuthMiddleware, err = r.AuthMiddlewareSetup(auth.New("https://some-domain/", []string{"some-audience"}))
 	assert.NoError(t, err)
 
@@ -31,16 +40,22 @@ func NewTestREST(t *testing.T) *R {
 }
 
 func TestREST_New(t *testing.T) {
+	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	assert.NoError(t, err)
+	assert.NoError(t, err)
+	mock.ExpectPing().WillReturnError(errors.New("ping error"))
+	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
+
 	t.Run("test success", func(t *testing.T) {
 		claims := auth.New("http://some-domain", []string{""})
-		h, err := New(postgres.NewTestDB(nil), nil, nil, claims, true, "9000")
+		h, err := New(&postgres.Client{DB: sqlxMock}, nil, nil, claims, true, "9000")
 		assert.NoError(t, err)
 		assert.NotNil(t, h)
 	})
 
 	t.Run("test auth init error", func(t *testing.T) {
 		claims := auth.New("\\", []string{""})
-		h, err := New(postgres.NewTestDB(nil), nil, nil, claims, true, "9000")
+		h, err := New(&postgres.Client{DB: sqlxMock}, nil, nil, claims, true, "9000")
 		assert.Error(t, err)
 		assert.Nil(t, h)
 	})

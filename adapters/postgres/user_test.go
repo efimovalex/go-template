@@ -3,10 +3,16 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
+
+func (db *Client) ResetTable(t *testing.T, table string) {
+	_, err := db.Exec(fmt.Sprintf("TRUNCATE TABLE %s RESTART IDENTITY CASCADE", table))
+	assert.NoError(t, err)
+}
 
 func TestClient_FindOneUserByEmail(t *testing.T) {
 	db := NewTestDB(t)

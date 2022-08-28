@@ -19,10 +19,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// Service represents the service interface that requires a start and a stop function for gracefull shutdown.
 type Service interface {
 	Start(ctx context.Context) error
 	Stop(ctx context.Context)
 }
+
+// Server represents the server service that loads the dependencies and starts the underlying services.
 type Server struct {
 	cfg *config.Config
 
@@ -39,6 +42,7 @@ type Server struct {
 	sigChan chan os.Signal
 }
 
+// New creates a new server with all dependant adapters and services.
 func New(cfg *config.Config) (*Server, error) {
 	db, err := postgres.New(cfg.Postgres.Host, cfg.Postgres.Port, cfg.Postgres.User, cfg.Postgres.Password, cfg.Postgres.Name, cfg.Postgres.SSLMode)
 	if err != nil {
@@ -72,6 +76,7 @@ func New(cfg *config.Config) (*Server, error) {
 	}, nil
 }
 
+// Start starts the server and all underlying services, and listens for system signals to gracefully shutdown.
 func (s *Server) Start(ctx context.Context) error {
 	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
 

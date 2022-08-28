@@ -1,14 +1,13 @@
+// Package mongodb provides functions to interact with mongo database.
 package mongodb
 
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -18,7 +17,7 @@ var (
 	retrywrites   = true
 )
 
-// Client - database client
+// Client represents a database client that contains functions used to interact with the database.
 type Client struct {
 	DB *mongo.Database
 	*mongo.Client
@@ -52,20 +51,7 @@ func New(address, port, username, password, database string, ssl bool) (*Client,
 	return c, nil
 }
 
+// Ping - Pings the database to check if it is alive.
 func (c *Client) Ping() error {
 	return c.Client.Ping(context.Background(), nil)
-}
-
-func NewTestDB(t *testing.T) *Client {
-	if t == nil {
-		return nil
-	}
-	db, err := New("localhost", "27017", "replaceme", "replaceme", "replaceme_test", false)
-	assert.NoError(t, err)
-	return db
-}
-
-func (c *Client) ResetCollection(t *testing.T, collection *mongo.Collection) {
-	err := collection.Drop(context.Background())
-	assert.NoError(t, err)
 }

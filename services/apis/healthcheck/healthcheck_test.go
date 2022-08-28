@@ -11,80 +11,84 @@ import (
 	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/efimovalex/replaceme/adapters/mongodb"
+	mongodb "github.com/efimovalex/replaceme/adapters/mongodb/mock"
 	"github.com/efimovalex/replaceme/adapters/postgres"
 	"github.com/efimovalex/replaceme/adapters/redisdb"
 	"github.com/go-redis/redismock/v8"
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func TestHealth_Check(t *testing.T) {
-	db := postgres.NewTestDB(t)
+	t.Run("Test health check", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+		assert.NoError(t, err)
+		defer mockDB.Close()
+		mock.ExpectPing()
+		sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
 
-	mdb := mongodb.NewTestDB(t)
+		redisClientMock, redismock := redismock.NewClientMock()
+		redismock.ExpectPing().SetVal("ok")
+		defer redisClientMock.Close()
 
-	rdb, err := redisdb.New("localhost", "6379", "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", 15)
-	assert.NoError(t, err)
+		mongoClientMock := mongodb.ClientMock{}
+		mongoClientMock.On("Ping").Return(nil)
 
+		h := New(&postgres.Client{DB: sqlxMock}, &mongoClientMock, &redisdb.Client{DB: redisClientMock}, "")
+
+		req, err := http.NewRequest("GET", "/healthcheck", nil)
+		assert.NoError(t, err)
+		w := httptest.NewRecorder()
+		h.Check(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, `{"message":"OK"}`, w.Body.String())
+	})
+
+	t.Run("Test health check failure with error", func(t *testing.T) {
+		mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+		assert.NoError(t, err)
+		mock.ExpectPing().WillReturnError(errors.New("ping error"))
+		sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
+
+		defer mockDB.Close()
+
+		redisClientMock, redismock := redismock.NewClientMock()
+		redismock.ExpectPing().SetErr(errors.New("redis error"))
+		defer redisClientMock.Close()
+
+		mongoClientMock := mongodb.ClientMock{}
+		mongoClientMock.On("Ping").Return(errors.New("mongo error"))
+
+		h := New(&postgres.Client{DB: sqlxMock}, &mongoClientMock, &redisdb.Client{DB: redisClientMock}, "")
+
+		req, err := http.NewRequest("GET", "/healthcheck", nil)
+		assert.NoError(t, err)
+		w := httptest.NewRecorder()
+		h.Check(w, req)
+
+		assert.Equal(t, http.StatusInternalServerError, w.Code)
+		assert.Equal(t, `{"message":"healthcheck failed","errors":["Unable to ping postgres","Unable to ping mongo","Unable to ping redis"]}`, w.Body.String())
+	})
+
+}
+
+func TestHealth_StopGrecefully(t *testing.T) {
 	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
 	assert.NoError(t, err)
-	mock.ExpectPing().WillReturnError(errors.New("ping error"))
+	mock.ExpectPing()
 	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
 
 	defer mockDB.Close()
 
 	redisClientMock, redismock := redismock.NewClientMock()
-	redismock.ExpectPing().SetErr(errors.New("redis error"))
+	redismock.ExpectPing().SetVal("ok")
 	defer redisClientMock.Close()
 
-	tests := []struct {
-		name           string
-		DB             *postgres.Client
-		Mongo          *mongodb.Client
-		Redis          *redisdb.Client
-		expectedBody   string
-		expectedStatus int
-	}{
-		{
-			name:           "Test health check success",
-			DB:             db,
-			Mongo:          mdb,
-			Redis:          rdb,
-			expectedBody:   `{"message":"OK"}`,
-			expectedStatus: http.StatusOK,
-		},
-		{
-			name:           "Test health check failure",
-			DB:             &postgres.Client{DB: sqlxMock},
-			Mongo:          &mongodb.Client{Client: &mongo.Client{}},
-			Redis:          &redisdb.Client{DB: redisClientMock},
-			expectedBody:   `{"message":"healthcheck failed","errors":["Unable to ping postgres","Unable to ping mongo","Unable to ping redis"]}`,
-			expectedStatus: http.StatusInternalServerError,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := New(tt.DB, tt.Mongo, tt.Redis, "")
+	mongoClientMock := mongodb.ClientMock{}
+	mongoClientMock.On("Ping").Return(nil)
 
-			req, err := http.NewRequest("GET", "/healthcheck", nil)
-			assert.NoError(t, err)
-			w := httptest.NewRecorder()
-			h.Check(w, req)
-
-			assert.Equal(t, tt.expectedStatus, w.Code)
-			assert.Equal(t, tt.expectedBody, w.Body.String())
-		})
-	}
-}
-
-func TestHealth_StopGrecefully(t *testing.T) {
-	db := postgres.NewTestDB(t)
-	mdb := mongodb.NewTestDB(t)
-	rdb := redisdb.NewTestDB(t)
-
-	h := New(db, mdb, rdb, "3000")
+	h := New(&postgres.Client{DB: sqlxMock}, &mongoClientMock, &redisdb.Client{DB: redisClientMock}, "")
 
 	testServer := httptest.NewServer(http.HandlerFunc(h.Check))
 	defer testServer.Close()
@@ -107,11 +111,21 @@ func TestHealth_StopGrecefully(t *testing.T) {
 }
 
 func TestHealth_StopDeadline(t *testing.T) {
-	db := postgres.NewTestDB(t)
-	mdb := mongodb.NewTestDB(t)
-	rdb := redisdb.NewTestDB(t)
+	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	assert.NoError(t, err)
+	mock.ExpectPing()
+	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
 
-	h := New(db, mdb, rdb, "3000")
+	defer mockDB.Close()
+
+	redisClientMock, redismock := redismock.NewClientMock()
+	redismock.ExpectPing().SetVal("ok")
+	defer redisClientMock.Close()
+
+	mongoClientMock := mongodb.ClientMock{}
+	mongoClientMock.On("Ping").Return(nil)
+
+	h := New(&postgres.Client{DB: sqlxMock}, &mongoClientMock, &redisdb.Client{DB: redisClientMock}, "")
 
 	testServer := httptest.NewServer(http.HandlerFunc(h.Check))
 	defer testServer.Close()
@@ -134,11 +148,21 @@ func TestHealth_StopDeadline(t *testing.T) {
 }
 
 func TestHealth_JSON(t *testing.T) {
-	db := postgres.NewTestDB(t)
-	mdb := mongodb.NewTestDB(t)
-	rdb := redisdb.NewTestDB(t)
+	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	assert.NoError(t, err)
+	mock.ExpectPing().WillReturnError(errors.New("ping error"))
+	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
 
-	h := New(db, mdb, rdb, "3000")
+	defer mockDB.Close()
+
+	redisClientMock, redismock := redismock.NewClientMock()
+	redismock.ExpectPing().SetErr(errors.New("redis error"))
+	defer redisClientMock.Close()
+
+	mongoClientMock := mongodb.ClientMock{}
+	mongoClientMock.On("Ping").Return(nil)
+
+	h := New(&postgres.Client{DB: sqlxMock}, &mongoClientMock, &redisdb.Client{DB: redisClientMock}, "")
 
 	type args struct {
 		w      http.ResponseWriter
@@ -185,17 +209,27 @@ func TestHealth_JSON(t *testing.T) {
 }
 
 func TestHealth_Start(t *testing.T) {
-	db := postgres.NewTestDB(t)
-	mdb := mongodb.NewTestDB(t)
-	rdb := redisdb.NewTestDB(t)
+	mockDB, mock, err := sqlmock.New(sqlmock.MonitorPingsOption(true))
+	assert.NoError(t, err)
+	mock.ExpectPing().WillReturnError(errors.New("ping error"))
+	sqlxMock := sqlx.NewDb(mockDB, "sqlmock")
+
+	defer mockDB.Close()
+
+	redisClientMock, redismock := redismock.NewClientMock()
+	redismock.ExpectPing().SetErr(errors.New("redis error"))
+	defer redisClientMock.Close()
+
+	mongoClientMock := mongodb.ClientMock{}
+	mongoClientMock.On("Ping").Return(nil)
 
 	testServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	t.Log(testServer.URL)
-	h := New(db, mdb, rdb, "not:a:port")
+	h := New(&postgres.Client{DB: sqlxMock}, &mongoClientMock, &redisdb.Client{DB: redisClientMock}, "not:a:port")
 
-	err := h.Start(context.Background())
+	err = h.Start(context.Background())
 
 	assert.Error(t, err)
 	assert.Equal(t, "listen tcp: address :not:a:port: too many colons in address", err.Error())

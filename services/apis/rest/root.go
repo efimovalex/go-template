@@ -12,6 +12,7 @@ type Message struct {
 	Message string `json:"message"`
 }
 
+// GetRoot root endpoint with a simple hello world/name message
 // @Summary [get] /
 // @Description Returns root endpoint
 // @Tags root

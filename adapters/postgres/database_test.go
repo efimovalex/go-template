@@ -8,6 +8,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func NewTestDB(t *testing.T) *Client {
+	if t == nil {
+		return nil
+	}
+	db, err := New("localhost", "5433", "replaceme", "replaceme", "replaceme_test", "disable")
+	assert.NoError(t, err)
+	return db
+}
+
 func TestNew(t *testing.T) {
 	type args struct {
 		host     string

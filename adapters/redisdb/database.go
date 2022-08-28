@@ -1,26 +1,22 @@
+// Package redisdb provides functions to interact with redis database.
 package redisdb
 
 import (
-
-	// sql driver
-
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/stretchr/testify/assert"
 )
 
-// Client - database client
+// Client represents a database client that contains functions used to interact with the database.
 type Client struct {
 	DB     *redis.Client
 	logger zerolog.Logger
 }
 
-// New - Creates a new Client
+// New creates a new redisdb.Client
 func New(host, port, password string, database int) (*Client, error) {
 	var err error
 	c := new(Client)
@@ -43,16 +39,8 @@ func New(host, port, password string, database int) (*Client, error) {
 	return c, nil
 }
 
+// Ping pings the database to check if it is alive.
 func (c *Client) Ping() error {
 	_, err := c.DB.Ping(context.Background()).Result()
 	return err
-}
-
-func NewTestDB(t *testing.T) *Client {
-	if t == nil {
-		return nil
-	}
-	db, err := New("localhost", "6379", "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81", 15)
-	assert.NoError(t, err)
-	return db
 }

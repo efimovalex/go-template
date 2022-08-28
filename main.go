@@ -1,3 +1,4 @@
+// Package main is the main entry point for the service
 package main
 
 import (
@@ -16,16 +17,21 @@ const (
 	exitFail = 1
 )
 
-// main - main entry point that loads configuration and starts the services
+// @title replaceme API
+// @version 1.0
+// @basePath /
+// main entry point for the service
 func main() {
 	err := run(os.Args, os.Stdout)
 	if err != nil {
 		log.Error().Err(err).Msg("failed to run")
 		os.Exit(exitFail)
 	}
+
 	os.Exit(exitOK)
 }
 
+// run loads configuration and runs the main server
 func run(args []string, stdout io.Writer) error {
 	ctx, done := context.WithCancel(context.Background())
 	defer done()

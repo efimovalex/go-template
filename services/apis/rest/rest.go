@@ -1,3 +1,4 @@
+// Package rest implements a REST API service
 package rest
 
 import (
@@ -16,15 +17,18 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// DB is the interface for the database service
 type DB interface {
 	Ping() error
 }
 
+// Router is the router interface for the REST service
 type Router interface {
 	ServeHTTP(w http.ResponseWriter, r *http.Request)
 	NewContext(r *http.Request, w http.ResponseWriter) echo.Context
 }
 
+// R is the REST service struct
 type R struct {
 	Router Router
 	srv    *http.Server
@@ -39,6 +43,7 @@ type R struct {
 	prettyResponse bool
 }
 
+// New creates a new REST service
 func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, prettyResponse bool, port string) (*R, error) {
 	rest := &R{
 		DB:             DB,
@@ -60,6 +65,7 @@ func New(DB DB, Mongo *mongodb.Client, redis *redisdb.Client, a *auth.Auth, pret
 	return rest, nil
 }
 
+// Start starts the REST service
 func (rest *R) Start(ctx context.Context) error {
 	rest.logger.Info().Msgf("Starting REST service %s", rest.srv.Addr)
 	lc := net.ListenConfig{}
@@ -75,6 +81,7 @@ func (rest *R) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop stops the REST service
 func (rest *R) Stop(ctx context.Context) {
 	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()

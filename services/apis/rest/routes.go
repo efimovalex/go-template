@@ -6,6 +6,7 @@ import (
 	"github.com/ziflex/lecho/v3"
 )
 
+// SetupRouter sets up the router paths for the REST service
 func (rest *R) SetupRouter() {
 	r := echo.New()
 	logger := lecho.From(rest.logger)

@@ -9,11 +9,10 @@ import (
 	"github.com/sethvargo/go-envconfig"
 )
 
-// Config used globally
+// Config used at the start of the application
 type Config struct {
 	Logger      Logger      `env:",prefix=LOG_"`
 	REST        REST        `env:",prefix=REST_"`
-	Static      Static      `env:",prefix=STATIC_"`
 	HealthCheck HealthCheck `env:",prefix=HC_"`
 
 	Postgres Postgres `env:",prefix=POSTGRES_"`
@@ -23,43 +22,32 @@ type Config struct {
 	Auth Auth `env:",prefix=AUTH_"`
 
 	Swagger Swagger `env:",prefix=SWAGGER_"`
-
-	Logging Logging
 }
 
+// Swagger represents the swagger service configuration
 type Swagger struct {
 	Enable bool   `env:"ENABLE,default=true"`
 	Port   string `env:"PORT,default=8085"`
 }
 
+// Logger represents the logger configuration
 type Logger struct {
 	Level  string `env:"LEVEL,default=info"`
 	Pretty bool   `env:"PRETTY,default=false"`
 }
 
-// REST configuration
+// REST represents the REST service configuration
 type REST struct {
 	Port   string `env:"PORT,default=8080"`
 	Pretty bool   `env:"PRETTY,default=false"`
 }
 
-// HealthCheck configuration
+// HealthCheck represents the healthcheck service configuration
 type HealthCheck struct {
 	Port string `env:"PORT,default=8081"`
 }
 
-// Static configuration
-type Static struct {
-	Port string `env:"PORT,default=8083"`
-}
-
-// Logging configuration
-type Logging struct {
-	Level       string `env:"LEVEL,default=info"`
-	Development bool   `env:"DEV,default=false"`
-}
-
-// Postgres configuration
+// Postgres represents the postgres service configuration
 type Postgres struct {
 	Host     string `env:"HOST,default=localhost"`
 	Name     string `env:"NAME,default=replaceme"`
@@ -69,7 +57,7 @@ type Postgres struct {
 	SSLMode  string `env:"SSL_MODE,default=disable"`
 }
 
-// Mongo configuration
+// Mongo represents the mongo service configuration
 type Mongo struct {
 	Host     string `env:"HOST,default=localhost"`
 	Name     string `env:"NAME,default=mongo_db"`
@@ -79,7 +67,7 @@ type Mongo struct {
 	SSLMode  bool   `env:"SSL_MODE,default=false"`
 }
 
-// Redis configuration
+// Redis represents the redis service configuration
 type Redis struct {
 	Host     string `env:"HOST,default=localhost"`
 	Database int    `env:"NAME,default=0"`
@@ -88,12 +76,13 @@ type Redis struct {
 	Port     string `env:"PORT,default=6379"`
 }
 
+// Auth represents the auth middleware configuration
 type Auth struct {
 	Domain   string `env:"DOMAIN,default=replaceme.eu.auth0.com"`
 	Audience string `env:"AUDIENCE,default=https://replaceme.com"`
 }
 
-// Load reads info from TOML file at relative path
+// Load reads info from ENV and returns a Config struct
 func Load() (*Config, error) {
 	var c Config
 	ctx := context.Background()
