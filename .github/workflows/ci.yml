@@ -1,5 +1,8 @@
 name: CI-pipeline
 
+env: 
+  REGISTRY: ghcr.io
+
 on:
   push:
     branches: [ "main" ]
